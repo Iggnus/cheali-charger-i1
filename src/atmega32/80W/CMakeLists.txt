@@ -1,15 +1,12 @@
-set(hardware 80W)
 
 set(SOURCE_FILES
     defaultCalibration.cpp
     HardwareConfig.h
 )
 
+CHEALI_HARDWARE(80W)
+CHEALI_CPU(atmega32)
+CHEALI_GENERIC_CHARGER(50W-generic)
 
-include(${CMAKE_SOURCE_DIR}/src/hardware/50W-generic/CMakeLists.txt)
-
-
-
-
-
+CHEALI_GENERATE_AVR_EXEC()
 

@@ -1,14 +1,12 @@
-set(hardware 200W)
 
 set(SOURCE_FILES
     defaultCalibration.cpp
     HardwareConfig.h
 )
 
-include(${CMAKE_SOURCE_DIR}/src/hardware/200W-generic/CMakeLists.txt)
+CHEALI_HARDWARE(200W)
+CHEALI_CPU(atmega32)
+CHEALI_GENERIC_CHARGER(200W-generic)
 
-
-
-
-
+CHEALI_GENERATE_AVR_EXEC()
 

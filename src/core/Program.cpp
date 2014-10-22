@@ -35,12 +35,14 @@
 #include "SerialLog.h"
 #include "DelayStrategy.h"
 
+#include "ProgramDCcycle.h"
 
 Program::ProgramType Program::programType_;
 Program::ProgramState Program::programState_ = Program::Done;
 const char * Program::stopReason_;
 
-namespace {
+namespace Program {
+    //TODO: separate Screens from Programs
     const Screen::ScreenType deltaChargeScreens[] PROGMEM = {
       Screen::ScreenFirst,
       Screen::ScreenEnergy,
@@ -87,6 +89,7 @@ namespace {
       Screen::ScreenEnd
 
     };
+
     const Screen::ScreenType balanceScreens[] PROGMEM = {
       Screen::ScreenBalancer1_3,            Screen::ScreenBalancer4_6,      BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9,)
       Screen::ScreenTime,
@@ -94,6 +97,7 @@ namespace {
       Screen::ScreenTemperature,
       Screen::ScreenEnd
     };
+
     const Screen::ScreenType dischargeScreens[] PROGMEM = {
       Screen::ScreenFirst,
       Screen::ScreenEnergy,
@@ -107,8 +111,8 @@ namespace {
       Screen::ScreenCycles,
       Screen::ScreenCIVlimits,
       Screen::ScreenEnd
-
     };
+
     const Screen::ScreenType storageScreens[] PROGMEM = {
       Screen::ScreenFirst,
       Screen::ScreenEnergy,
@@ -134,94 +138,76 @@ namespace {
     const Screen::ScreenType startInfoScreens[] PROGMEM = {
       Screen::ScreenStartInfo,
       Screen::ScreenVinput,
-      Screen::ScreenTemperature,   
+      Screen::ScreenTemperature,
       Screen::ScreenEnd
     };
-
-    Strategy::statusType doStrategy(const Screen::ScreenType chargeScreens[], bool exitImmediately = false){
-
-        Strategy::statusType status = Strategy::doStrategy(chargeScreens, exitImmediately);
-        return status;
-    }
-
-    uint8_t tempCDcycles_ = 0;
-    char cycleMode='-';
-    
-} //namespace {
+}
 
 bool Program::startInfo()
 {
     bool balancer = false;
-    const Screen::ScreenType * screen = startInfoScreens;
-    Strategy::strategy_ = &StartInfoStrategy::vtable;
+    Strategy::strategy = &StartInfoStrategy::vtable;
+    Strategy::exitImmediately = true;
     if(ProgramData::currentProgramData.isLiXX()) {
         //usues balance port
         balancer = true;
-        screen = startInfoBalanceScreens;
     }
     StartInfoStrategy::setBalancePort(balancer);
-    return doStrategy(startInfoBalanceScreens, true) == Strategy::COMPLETE;
+    return Strategy::doStrategy(startInfoBalanceScreens) == Strategy::COMPLETE;
 }
 
-Strategy::statusType Program::runStorage(bool balance, bool immediately = false)
+Strategy::statusType Program::runStorage(bool balance)
 {
     StorageStrategy::setDoBalance(balance);
     StorageStrategy::setVII(ProgramData::currentProgramData.getVoltage(ProgramData::VStorage),
             ProgramData::currentProgramData.battery.Ic, ProgramData::currentProgramData.battery.Id);
-    Strategy::strategy_ = &StorageStrategy::vtable;
-    return doStrategy(storageScreens);
+    Strategy::strategy = &StorageStrategy::vtable;
+    return Strategy::doStrategy(storageScreens);
 }
-Strategy::statusType Program::runTheveninCharge(int minChargeC,  bool immediately = false)
+Strategy::statusType Program::runTheveninCharge(int minChargeC)
 {
     TheveninChargeStrategy::setVIB(ProgramData::currentProgramData.getVoltage(ProgramData::VCharge),
             ProgramData::currentProgramData.battery.Ic, false);
-    //TheveninChargeStrategy::setMinI(ProgramData::currentProgramData.battery.Ic/minChargeC);		//ign   incompatible with my mod
-    Strategy::strategy_ = &TheveninChargeStrategy::vtable;
-    return doStrategy(theveninScreens, immediately);
+    //TheveninChargeStrategy::setMinI(ProgramData::currentProgramData.battery.Ic/minChargeC);		//ignt проверить ток оконч зарядки
+    Strategy::strategy = &TheveninChargeStrategy::vtable;
+    return Strategy::doStrategy(theveninScreens);
 }
 
-Strategy::statusType Program::runTheveninChargeBalance( bool immediately = false)
+Strategy::statusType Program::runTheveninChargeBalance()
 {
     TheveninChargeStrategy::setVIB(ProgramData::currentProgramData.getVoltage(ProgramData::VCharge),
             ProgramData::currentProgramData.battery.Ic, true);
-    Strategy::strategy_ = &TheveninChargeStrategy::vtable;
-    return doStrategy(theveninScreens, immediately);
+    Strategy::strategy = &TheveninChargeStrategy::vtable;
+    return Strategy::doStrategy(theveninScreens);
 }
 
 
-Strategy::statusType Program::runDeltaCharge(bool immediately = false)
+Strategy::statusType Program::runDeltaCharge()
 {
-    Strategy::strategy_ = &DeltaChargeStrategy::vtable;
-    return doStrategy(deltaChargeScreens, immediately);
+    Strategy::strategy = &DeltaChargeStrategy::vtable;
+    return Strategy::doStrategy(deltaChargeScreens);
 }
 
-Strategy::statusType Program::runDischarge(bool immediately = false)
+Strategy::statusType Program::runDischarge()
 {
     AnalogInputs::ValueType Voff = ProgramData::currentProgramData.getVoltage(ProgramData::VDischarge);
     Voff += settings.dischargeOffset_LiXX_ * ProgramData::currentProgramData.battery.cells;
     TheveninDischargeStrategy::setVI(Voff, ProgramData::currentProgramData.battery.Id);
-    Strategy::strategy_ = &TheveninDischargeStrategy::vtable;
-    return doStrategy(dischargeScreens, immediately);
+    Strategy::strategy = &TheveninDischargeStrategy::vtable;
+    return Strategy::doStrategy(dischargeScreens);
 }
 
-Strategy::statusType Program::runNiXXDischarge(bool immediately = false)
+Strategy::statusType Program::runNiXXDischarge()
 {
     TheveninDischargeStrategy::setVI(ProgramData::currentProgramData.getVoltage(ProgramData::VDischarge), ProgramData::currentProgramData.battery.Id);
-    Strategy::strategy_ = &TheveninDischargeStrategy::vtable;
-    return doStrategy(NiXXDischargeScreens, immediately);
+    Strategy::strategy = &TheveninDischargeStrategy::vtable;
+    return Strategy::doStrategy(NiXXDischargeScreens);
 }
 
 Strategy::statusType Program::runBalance()
 {
-    Strategy::strategy_ = &Balancer::vtable;
-    return doStrategy(balanceScreens);
-}
-
-Strategy::statusType Program::runWasteTime()
-{    
-    DelayStrategy::setDelay(settings.WasteTime_);
-    Strategy::strategy_ = &DelayStrategy::vtable;
-    return doStrategy(dischargeScreens, true);	
+    Strategy::strategy = &Balancer::vtable;
+    return Strategy::doStrategy(balanceScreens);
 }
 
 Program::ProgramState getProgramState(Program::ProgramType prog)
@@ -267,15 +253,16 @@ Program::ProgramState getProgramState(Program::ProgramType prog)
 void Program::run(ProgramType prog)
 {
     programType_ = prog;
-    stopReason_ = PSTR("");
+    stopReason_ = NULL;
 
-    programState_ = getProgramState(prog);  
-
+    programState_ = getProgramState(prog);
     SerialLog::powerOn();
     AnalogInputs::powerOn();
 
 
     if(startInfo()) {
+        Monitor::powerOn();
+        Strategy::exitImmediately = false;
         Buzzer::soundStartProgram();
 
         switch(prog) {
@@ -306,274 +293,36 @@ void Program::run(ProgramType prog)
         case Program::DischargeNiXX:
             runNiXXDischarge();
             break;
-           
         case Program::DCcycleLiXX:
-              runDCcycle(1);  //1= lixx
-              break;
+//            if (settings.forceBalancePort_) {
+                ProgramDCcycle::runDCcycle(ProgramDCcycle::LiXX);
+//            } else {
+//                Screen::runNeedForceBalance();
+//            }
+            break;
         case Program::DCcycleNiXX:
-            runDCcycle(0);   //0 = nixx
+            ProgramDCcycle::runDCcycle(ProgramDCcycle::NiXX);
             break;
         case Program::DCcyclePb:
-            runDCcycle(2);   //2= pb
-            break;   
+            ProgramDCcycle::runDCcycle(ProgramDCcycle::Pb);
+            break;
         case Program::ChargeLiXX_Balance:
             runTheveninChargeBalance();
             break;
-
         default:
             //TODO:
             Screen::runNotImplemented();
             break;
         }
+        Monitor::powerOff();
     }
     AnalogInputs::powerOff();
     SerialLog::powerOff();
 }
 
-
-uint8_t Program::currentCycle() { return tempCDcycles_;}
-
-char Program::currentCycleMode() { return cycleMode;}
-
-Strategy::statusType Program::runDCcycle(uint8_t prog1)
-{ //TODO_NJ
-    Strategy::statusType status;
-    
-    for(tempCDcycles_=1; tempCDcycles_ <= settings.CDcycles_; tempCDcycles_++) {
-
-          //discharge
-          AnalogInputs::resetAccumulatedMeasurements();
-          cycleMode='D';
-          status = runCycleDischargeCommon(prog1);
-          if(status != Strategy::COMPLETE) {break;} 
- 
-          //waiting after discharge
-          cycleMode='W';
-          status = runWasteTime();
-          if(status != Strategy::COMPLETE) { break; } 
-          
-          //charge
-          Screen::resetETA();
-          AnalogInputs::resetAccumulatedMeasurements();
-          cycleMode='C';
-              
-          //lastcharge? (no need wait at end?)
-          if (tempCDcycles_ != settings.CDcycles_)
-           {
-              status = runCycleChargeCommon(prog1, true); //independent exit
-           } 
-           else 
-           {
-              status = runCycleChargeCommon(prog1, false);
-           }  
-           if(status != Strategy::COMPLETE) {break;} 
-          
-          //waiting after charge
-          cycleMode='W';
-          if (tempCDcycles_ != settings.CDcycles_)
-           {
-            status = runWasteTime();
-            if(status != Strategy::COMPLETE) { break; }
-            else {status = Strategy::COMPLETE;}
-          }      
-    } 
-    return status;
-}
-
-
-Strategy::statusType Program::runCycleDischargeCommon(uint8_t prog1)
+Strategy::statusType Program::runDCRestTime()
 {
-  Strategy::statusType status;
-
-  if(prog1 == 1)  //1 is lixx
-  { 
-    status = runDischarge(true);
-  }
-
-  if(prog1 == 0)  //0 nixx
-  { 
-    status = runNiXXDischarge(true);
-  }
-
-  if(prog1 == 2)  //2 pb
-  { 
-    status = runDischarge(true);
-  }
-
-  return status;
+    DelayStrategy::setDelay(settings.DCRestTime_-1);		//ign0
+    Strategy::strategy = &DelayStrategy::vtable;
+    return Strategy::doStrategy(Program::dischargeScreens);
 }
-
-Strategy::statusType Program::runCycleChargeCommon(uint8_t prog1, bool mode)
-{
- Strategy::statusType status;
- 
- //lastcharge? (no need wait at end?)
-          if (tempCDcycles_ != settings.CDcycles_)
-           {
-              if(prog1 == 1)  //1 is lixx  //0 is nixx
-              { if (settings.forceBalancePort_) status =  runTheveninChargeBalance(mode);		//ign
-                else status =  runTheveninCharge(settings.Lixx_Imin_, mode); } //independent exit		//ign
-             if(prog1 == 0)     //nixx
-              { status =  runDeltaCharge(mode); } //independent exit  
-             if(prog1 == 2)  //pb
-              { status =  runTheveninCharge(settings.Lixx_Imin_, mode); }  //independent exit  
-           } 
-           else 
-           {
-              if(prog1 == 1)
-              { if (settings.forceBalancePort_) status = runTheveninChargeBalance();		//ign
-                else status =  runTheveninCharge(settings.Lixx_Imin_); } //normal exit point		//ign
-               if(prog1 == 0)   //nixx
-              { status = runDeltaCharge();  } //normal exit point
-              if(prog1 == 2)  //pb
-              { status =  runTheveninCharge(settings.Lixx_Imin_); }   //normal exit point
-           }
-
- return status;
-}
-
-
-// Program selection depending on the battery type
-
-namespace {
-
-    const char charge_str[] PROGMEM = "charge";
-    const char chaBal_str[] PROGMEM = "charge+balance";
-    const char balanc_str[] PROGMEM = "balance";
-    const char discha_str[] PROGMEM = "discharge";
-    const char fastCh_str[] PROGMEM = "fast charge";
-    const char storag_str[] PROGMEM = "storage";
-    const char stoBal_str[] PROGMEM = "storage+balanc";
-    const char dccycl_str[] PROGMEM = "D>C format";       
-    const char edBatt_str[] PROGMEM = "edit battery";
-
-    const char * const programLiXXMenu[] PROGMEM =
-    { charge_str,
-      chaBal_str,
-      balanc_str,
-      discha_str,
-      fastCh_str,
-      storag_str,
-      stoBal_str,
-      dccycl_str,
-      edBatt_str,
-      NULL
-    };
-
-    const Program::ProgramType programLiXXMenuType[] PROGMEM =
-    { Program::ChargeLiXX,
-      Program::ChargeLiXX_Balance,
-      Program::Balance,
-      Program::DischargeLiXX,
-      Program::FastChargeLiXX,
-      Program::StorageLiXX,
-      Program::StorageLiXX_Balance,
-      Program::DCcycleLiXX,   
-      Program::EditBattery
-    };
-
-    const char * const programNiZnMenu[] PROGMEM =
-    { charge_str,
-      chaBal_str,
-      balanc_str,
-      discha_str,
-      fastCh_str,
-      dccycl_str,
-      edBatt_str,
-      NULL
-    };
-
-    const Program::ProgramType programNiZnMenuType[] PROGMEM =
-    { Program::ChargeLiXX,
-      Program::ChargeLiXX_Balance,
-      Program::Balance,
-      Program::DischargeLiXX,
-      Program::FastChargeLiXX,   //TODO: check
-      Program::DCcycleLiXX,      //TODO: check
-      Program::EditBattery
-    };
-
-
-    const char * const programNiXXMenu[] PROGMEM =
-    { charge_str,
-      discha_str,
-      dccycl_str,
-      edBatt_str,
-      NULL
-    };
-
-    const Program::ProgramType programNiXXMenuType[] PROGMEM =
-    { Program::ChargeNiXX,
-      Program::DischargeNiXX,
-      Program::DCcycleNiXX,
-      Program::EditBattery
-    };
-
-    const char * const programPbMenu[] PROGMEM =
-    { charge_str,
-      discha_str,
-      fastCh_str,
-      dccycl_str,
-      edBatt_str,
-      NULL
-    };
-
-    const Program::ProgramType programPbMenuType[] PROGMEM =
-    { Program::ChargePb,
-      Program::DischargePb,
-      Program::FastChargePb,   //TODO: check
-      Program::DCcyclePb,      //TODO: check
-      Program::EditBattery
-    };
-
-
-    StaticMenu selectLiXXMenu(programLiXXMenu);
-    StaticMenu selectNiXXMenu(programNiXXMenu);
-    StaticMenu selectNiZnMenu(programNiZnMenu);
-    StaticMenu selectPbMenu(programPbMenu);
-
-    StaticMenu * getSelectProgramMenu() {
-        if(ProgramData::currentProgramData.battery.type == ProgramData::NiZn)
-            return &selectNiZnMenu;
-        if(ProgramData::currentProgramData.isLiXX())
-            return &selectLiXXMenu;
-        else if(ProgramData::currentProgramData.isNiXX())
-            return &selectNiXXMenu;
-        else return &selectPbMenu;
-    }
-    Program::ProgramType getSelectProgramType(uint8_t index) {
-        const Program::ProgramType * address;
-        if(ProgramData::currentProgramData.battery.type == ProgramData::NiZn)
-            address = &programNiZnMenuType[index];
-        else if(ProgramData::currentProgramData.isLiXX())
-            address = &programLiXXMenuType[index];
-        else if(ProgramData::currentProgramData.isNiXX())
-            address = &programNiXXMenuType[index];
-        else address = &programPbMenuType[index];
-        return pgm::read(address);
-    }
-}
-
-void Program::selectProgram(int index)
-{
-    ProgramData::loadProgramData(index);
-    StaticMenu * selectPrograms = getSelectProgramMenu();
-    int8_t menuIndex;
-    do {
-        menuIndex = selectPrograms->runSimple();
-        if(menuIndex >= 0)  {
-            Program::ProgramType prog = getSelectProgramType(menuIndex);
-            if(prog == Program::EditBattery) {
-                ProgramData::currentProgramData.edit(index);
-                ProgramData::saveProgramData(index);
-                selectPrograms = getSelectProgramMenu();
-            } else {
-                Program::run(prog);
-            }
-        }
-    } while(menuIndex >= 0);
-}
-
-
-
-

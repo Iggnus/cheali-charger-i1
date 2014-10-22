@@ -72,7 +72,6 @@ Strategy::statusType TheveninDischargeStrategy::doStrategy()
     bool stable;
     bool isEndVout = SimpleDischargeStrategy::isMinVout();
     uint16_t oldValue = Discharger::getValue();
-    //uint16_t oldValue = AnalogInputs::calibrateValue(AnalogInputs::IdischargeValue, Discharger::getValue());		//ign_mA
 
     //when discharging near the end, the battery voltage is very unstable
     //but we need new discharge values at that point
@@ -97,5 +96,4 @@ Strategy::statusType TheveninDischargeStrategy::doStrategy()
     }
     return Strategy::RUNNING;
 }
-
 

@@ -1,83 +1,39 @@
-cmake_minimum_required(VERSION 2.6)
-
-MACRO (TODAY RESULT) 
-        EXECUTE_PROCESS(COMMAND "date" "+%Y%m%d" OUTPUT_VARIABLE ${RESULT}) 
-        string(REGEX REPLACE "(..)/(..)/..(..).*" "\\1\\2\\3" ${RESULT} ${${RESULT}}) 
-        string(REGEX REPLACE "(\r?\n)+$" "" ${RESULT} ${${RESULT}}) 
-ENDMACRO (TODAY) 
-
-
-
-
+cmake_minimum_required(VERSION 2.8.11)
 
 SET(CMAKE_SYSTEM_NAME Generic)
 SET(CMAKE_C_COMPILER avr-gcc)
 SET(CMAKE_CXX_COMPILER avr-g++)
 
-Project(cheali-charger-mod)
+Project(cheali-charger)
 
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-  
+find_package(UnixCommands)
+find_package(ChealiChargerInternal REQUIRED)
 
-TODAY(RESULT)
-set(cheali-charger-buildnumber ${RESULT})
-set(cheali-charger-version 0.33m)
+string(TIMESTAMP timestamp "%Y%m%d")
+
+set(cheali-charger-version 0.33)
 set(cheali-charger-eeprom-calibration-version 8)
-set(cheali-charger-eeprom-programdata-version 51)
-set(cheali-charger-eeprom-settings-version 56)
+set(cheali-charger-eeprom-programdata-version 1)
+set(cheali-charger-eeprom-settings-version 5)
+set(cheali-charger-buildnumber ${timestamp})
 
-
+message(STATUS "cheali-charger-version: ${cheali-charger-version}")
+message(STATUS "cheali-charger-eeprom-calibration-version: ${cheali-charger-eeprom-calibration-version}")
+message(STATUS "cheali-charger-eeprom-programdata-version: ${cheali-charger-eeprom-programdata-version}")
+message(STATUS "cheali-charger-eeprom-settings-version: ${cheali-charger-eeprom-settings-version}")
+message(STATUS "cheali-charger-buildnumber: ${cheali-charger-buildnumber}")
 
 configure_file(src/core/Version.h.in src/core/Version.h)
 
 
 if(ARM-Cortex-M0)
-    message(STATUS "target: ARM-Cortex-M0")
+    message(STATUS "target architecture: ARM-Cortex-M0")
     include(arm-compiler.cmake)
-    add_subdirectory(src/core)
-    add_subdirectory(src/hardware/imaxB6-clone-ARM-Cortex-M0)
+    add_subdirectory(src/nuvoton)
 else(ARM-Cortex-M0)
-    message(STATUS "target: avr")
-    message(STATUS "Compilation date = ${RESULT}") 
-
+    message(STATUS "target architecture: avr")
     include(avr-compiler.cmake)
-    add_subdirectory(src/core/atmega32)
-
-    add_subdirectory(src/hardware/50W-5A)
-    add_subdirectory(src/hardware/50W-6A)
-    add_subdirectory(src/hardware/200W)   
-    add_subdirectory(src/hardware/200W-commondisplay)
-    add_subdirectory(src/hardware/80W)
-    add_subdirectory(src/hardware/400W)
-    add_subdirectory(src/hardware/Turnigy-Accucel-8-150W-7A)
-    
-    add_subdirectory(src/hardware/50W-5A_zero_amp_idnus)
-    add_subdirectory(src/hardware/50W-5A_strong_balancer_zero_amp_idnus)
-    add_subdirectory(src/hardware/50W-5A_strong_balancer_idnus)
-
-    add_subdirectory(src/hardware/50W-6A_zero_amp_idnus)
-    add_subdirectory(src/hardware/50W-6A_strong_balancer_zero_amp_idnus)
-    add_subdirectory(src/hardware/50W-6A_strong_balancer_idnus)
-
-    add_subdirectory(src/hardware/200W_zero_amp_idnus)
-    add_subdirectory(src/hardware/200W_strong_balancer_zero_amp_idnus)
-    add_subdirectory(src/hardware/200W_strong_balancer_idnus)    
-
-    add_subdirectory(src/hardware/200W-commondisplay_zero_amp_idnus)  
-    add_subdirectory(src/hardware/200W-commondisplay_strong_balancer_zero_amp_idnus)  
-    add_subdirectory(src/hardware/200W-commondisplay_strong_balancer_idnus)   
-
-    add_subdirectory(src/hardware/80W_zero_amp_idnus)  
-    add_subdirectory(src/hardware/80W_strong_balancer_zero_amp_idnus)  
-    add_subdirectory(src/hardware/80W_strong_balancer_idnus)        
-
-    add_subdirectory(src/hardware/400W_zero_amp_idnus)  
-    add_subdirectory(src/hardware/400W_strong_balancer_zero_amp_idnus)    
-    add_subdirectory(src/hardware/400W_strong_balancer_idnus)
-
-    add_subdirectory(src/hardware/Turnigy-Accucel-8-150W-7A_zero_amp_idnus)  
-    add_subdirectory(src/hardware/Turnigy-Accucel-8-150W-7A_strong_balancer_zero_amp_idnus)  
-    add_subdirectory(src/hardware/Turnigy-Accucel-8-150W-7A_strong_balancer_idnus)      
+    add_subdirectory(src/atmega32)
 endif(ARM-Cortex-M0)
-
-

@@ -46,11 +46,8 @@ void Discharger::initialize()
 
 void Discharger::setValue(uint16_t value)
 {
-    //if (settings.calibratedState_ >= 7)
-/*	if (Program::programState_ != Program::Calibration)		//ign  Useless with mA
-    {
-		if(value > settings.DISCHARGER_Upperbound_Value_) value = settings.DISCHARGER_Upperbound_Value_;
-	} */
+//    if(value > DISCHARGER_UPPERBOUND_VALUE)
+//        value = DISCHARGER_UPPERBOUND_VALUE;
     valueSet_ = value;
     finalizeValueTintern(true);
 }
@@ -120,4 +117,3 @@ void Discharger::doIdle()
     }
 #endif
 }
-

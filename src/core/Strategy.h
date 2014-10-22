@@ -24,6 +24,7 @@
 
 namespace Strategy {
     extern uint8_t OnTheFly_;   //ign
+    extern bool OnTheFly_blink;   //ign
     enum statusType {ERROR, COMPLETE, RUNNING };
     struct VTable {
         void (*powerOn)();
@@ -31,9 +32,10 @@ namespace Strategy {
         statusType (*doStrategy)();
     };
 
-    extern const VTable * strategy_;
+    extern const VTable * strategy;
+    extern bool exitImmediately;
 
-    statusType doStrategy(const Screen::ScreenType chargeScreens[], bool exitImmediately = false);
+    statusType doStrategy(const Screen::ScreenType chargeScreens[]);
 };
 
 

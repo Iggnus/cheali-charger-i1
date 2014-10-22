@@ -24,7 +24,7 @@
 #include "Settings.h"
 
 #include "IO.h"
-
+//#include "SerialLog.h"  //ign
 
 namespace TheveninMethod {
     uint16_t minValue_;
@@ -45,16 +45,10 @@ namespace TheveninMethod {
     AnalogInputs::ValueType idebug_;
 
 
- void setMinI(AnalogInputs::ValueType i) 
+    void setMinI(AnalogInputs::ValueType i) 
     {    
-     if (i < 30) 
-        { 
-            minValue_ = 30; 
-        }
-        else
-        {
-            minValue_ = i; 
-        }
+        if (i < 30) i = 30;
+        minValue_ = i; 
     }
 
     uint16_t getMinValueB() {
@@ -110,7 +104,7 @@ void TheveninMethod::setVIB(AnalogInputs::ValueType Vend, AnalogInputs::ValueTyp
     balance_ = balance;
     }                    //ign
     maxValue_ = i;
-    minValue_ = i /settings.Lixx_Imin_;    //default=10
+    minValue_ = i / settings.Lixx_Imin_;    //default=10
         //low current
     if (maxValue_ < 30) { maxValue_ = 30; }
     if (minValue_ < 30) { minValue_ = 30; }
@@ -227,12 +221,20 @@ AnalogInputs::ValueType TheveninMethod::normalizeI(AnalogInputs::ValueType value
 	
 #ifdef DYNAMIC_MAX_CURRENT
 	uint32_t i;
+	uint16_t v = AnalogInputs::getVout();
 	if(!IO::digitalRead(SMPS_DISABLE_PIN)) i = MAX_CHARGE_P;
 	else i = MAX_DISCHARGE_P;
 //	if(!IO::digitalRead(SMPS_DISABLE_PIN)) i =  ANALOG_WATT(2.000);
 //	else i =  ANALOG_WATT(2.000);
 	i *= ANALOG_VOLT(1);
-	i /= AnalogInputs::getVout();
+#ifdef DYNAMIC_MAX_POWER	
+	if(AnalogInputs::getRealValue(AnalogInputs::Vin) > ANALOG_VOLT(10)) {
+		v += ANALOG_VOLT(10);
+		v -= AnalogInputs::getRealValue(AnalogInputs::Vin);
+		v++;
+	}
+#endif	
+	i /= v;
 	if(value > i) value = i;
 #endif
 
@@ -261,5 +263,3 @@ void TheveninMethod::storeOldValue(AnalogInputs::ValueType oldValue)
         tBal_[i].storeLast(vi, oldValue);
     }
 }
-
-

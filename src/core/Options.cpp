@@ -27,20 +27,20 @@
 #include "ProgramData.h"
 #include "eeprom.h"
 
-const char string_o1[] PROGMEM = "settings";
-const char string_o2[] PROGMEM = "calibrate";
-const char string_o3[] PROGMEM = "reset default";
+using namespace options;
 
-const char * const optionsStaticMenu[] PROGMEM =
-{ string_o1,
-  string_o2,
-  string_o3,
-  NULL
+const char * const optionsStaticMenu[] PROGMEM = {
+        string_settings,
+        string_calibrate,
+#ifdef ENABLE_EEPROM_RESTORE_DEFAULT
+        string_resetDefault,
+#endif
+        NULL
 };
 
 void Options::resetDefault()
 {
-    eeprom::restoreDefault(true);
+    eeprom::restoreDefault();
 }
 
 void Options::run()
@@ -50,10 +50,15 @@ void Options::run()
 
     do {
         i = optionsMenu.runSimple();
+        START_CASE_COUNTER;
         switch(i) {
-        case 0: settings.edit(); break;
-        case 1: Calibrate::run(); break;
-        case 2: resetDefault(); break;
+            case NEXT_CASE: settings.edit(); break;
+#ifdef ENABLE_CALIBRATION
+            case NEXT_CASE: Calibrate::run(); break;
+#endif
+#ifdef ENABLE_EEPROM_RESTORE_DEFAULT
+            case NEXT_CASE: resetDefault(); break;
+#endif
         }
     } while(i>=0);
 }

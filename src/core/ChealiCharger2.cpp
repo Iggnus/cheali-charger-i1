@@ -20,7 +20,7 @@
 #include "ProgramData.h"
 #include "AnalogInputs.h"
 #include "EditName.h"
-#include "Program.h"
+#include "ProgramMenus.h"
 #include "Options.h"
 #include "Utils.h"
 #include "Buzzer.h"
@@ -31,6 +31,7 @@
 #include "SerialLog.h"
 #include "eeprom.h"
 #include "cpu.h"
+#include "Serial.h"
 
 const char string_options[] PROGMEM = "options";
 const char * const progmemMainMenu[] PROGMEM =
@@ -47,7 +48,7 @@ void loop()
             Options::run();
             break;
         default:
-            Program::selectProgram(index - 1);
+            ProgramMenus::selectProgram(index - 1);
         }
     }
 }
@@ -56,38 +57,24 @@ void loop()
 void setup()
 {
     cpu::init();
+
     hardware::initialize();
-    Timer::initialize();
+    Time::initialize();
     SMPS::initialize();
     Discharger::initialize();
     AnalogInputs::initialize();
+    Serial::initialize();
 
 #ifdef ENABLE_STACK_INFO
     StackInfo::initialize();
 #endif
 
     Settings::load();
+    Screen::initialize();
 
-#ifdef START_DELAY_MS
-    Timer::delay(START_DELAY_MS); //waiting common display charger for display relase
-#endif
+    Screen::runWelcomeScreen();
 
-    Screen::displayStrings(PSTR("Cheali-Charger m"),
-                           PSTR("v"  CHEALI_CHARGER_VERSION_STRING));
-    Timer::delay(1000); 
-    eeprom::restoreDefault();
-    
-#ifdef ENABLE_RAM_CG
-    lcdCreateCGRam();
-#endif  
-
-    if (settings.calibratedState_ < 7)
-    {
-    Screen::runCalibrateBeforeUse();
-    }
-
-
-
+    eeprom::check();
 }
 
 

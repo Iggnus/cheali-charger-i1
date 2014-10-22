@@ -51,11 +51,9 @@ const Settings defaultSettings PROGMEM = {
         SETTINGS_DELTA_V_ENABLE_DEFAULT, //enable_deltaV_
         ANALOG_VOLT(0.005), //deltaV_NiMH_
         ANALOG_VOLT(0.015), //deltaV_NiCd_
-        5,                  //CDcycles_
-        30,                 //WasteTime_
-#ifdef ENABLE_MUTEAUDIO        
+        5,                  //DCcycles_
+        30,                 //DCRestTime_
         1,                  //AudioBeep_ yes/no
-#endif        
         10,                 //Lixx_Imin.
         120,                //"%" capCutoff_
         ANALOG_VOLT(7),     //inputVoltageLow_
@@ -64,7 +62,9 @@ const Settings defaultSettings PROGMEM = {
         SETTINGS_FORCE_BALANCE_PORT_DEFAULT,            //forceBalancePort_
         ANALOG_VOLT(0.008), //balancerError_
         Settings::Disabled, //UART_ - disabled
-        0,                   //9600
+        3,                   //57600
+        Settings::Software, //UARTinput_
+
         0,                   //calibratedState_
         0,                   //SMPS_Upperbound_Value_
         0                    //DISCHARGER_Upperbound_Value_
@@ -91,6 +91,8 @@ void Settings::load() {
 
 void Settings::save() {
     eeprom::write(&eeprom::data.settings, settings);
+    eeprom::restoreSettingsCRC();
+
     settings.apply();
 }
 
@@ -104,7 +106,7 @@ void Settings::restoreDefault() {
 }
 
 void Settings::check() {
-    if(CDcycles_>5) CDcycles_ = 5;
+    if(DCcycles_>5) DCcycles_ = 5;
 }
 
 void Settings::apply() {
@@ -112,6 +114,7 @@ void Settings::apply() {
     hardware::setLCDBacklight(backlight_);
 #endif
     Monitor::update();
+    hardware::setExternalTemperatueOutput(externT_);
 }
 
 

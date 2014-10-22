@@ -23,6 +23,7 @@
 #include "TheveninMethod.h"
 #include "memory.h"
 
+//#include "SerialLog.h"    //ign
 
 
 namespace TheveninChargeStrategy {
@@ -65,7 +66,6 @@ Strategy::statusType TheveninChargeStrategy::doStrategy()
     bool update;
     bool isendVout = isEndVout();
     uint16_t oldValue = SMPS::getValue();
- //   uint16_t oldValue = AnalogInputs::calibrateValue(AnalogInputs::IsmpsValue, SMPS::getValue());		//ign_mA
 
     //test if charge complete
     if(TheveninMethod::isComlete(isendVout, oldValue)) {
@@ -93,3 +93,5 @@ bool TheveninChargeStrategy::isEndVout()
 
     return Vc <= AnalogInputs::getVout() || Balancer::isMaxVout(Vc_per_cell);
 }
+
+

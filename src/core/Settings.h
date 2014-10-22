@@ -25,6 +25,7 @@
 struct Settings {
 
     enum UARTType {Disabled, Normal,  Debug,  ExtDebug, ExtDebugAdc};
+    enum UARTInput {Software, Hardware};
     static const uint8_t UARTSpeeds = 5;
     static const AnalogInputs::ValueType TempDifference = ANALOG_CELCIUS(5);
     static const AnalogInputs::ValueType MaxDischargeOffset_LiXX = ANALOG_VOLT(1.000);
@@ -36,11 +37,9 @@ struct Settings {
     AnalogInputs::ValueType deltaT_;
     uint16_t enable_deltaV_;
     AnalogInputs::ValueType deltaV_NiMH_, deltaV_NiCd_;
-    uint16_t CDcycles_;
-    uint16_t WasteTime_;
- #ifdef ENABLE_MUTEAUDIO   
+    uint16_t DCcycles_;
+    uint16_t DCRestTime_;
     uint16_t AudioBeep_;
- #endif   
     uint16_t Lixx_Imin_;
     uint16_t capCutoff_;
     AnalogInputs::ValueType inputVoltageLow_;
@@ -50,6 +49,8 @@ struct Settings {
     AnalogInputs::ValueType balancerError_;
     uint16_t UART_;
     uint16_t UARTspeed_;
+    uint16_t UARTinput_;
+
     uint16_t calibratedState_;
     uint16_t SMPS_Upperbound_Value_;
     uint16_t DISCHARGER_Upperbound_Value_;

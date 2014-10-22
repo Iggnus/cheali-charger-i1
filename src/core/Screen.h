@@ -40,13 +40,10 @@ namespace Screen {
 
     extern Blink blink;
 
-    uint16_t getTimeSec();
-    uint16_t getTotalChargDischargeTime();
+    void initialize();
+
     uint8_t getChargeProcent();
     void doSlowInterrupt();
-
-    void powerOn();
-    void powerOff();
 
     void display(ScreenType screen);
 
@@ -79,12 +76,16 @@ namespace Screen {
     void printCharge();
     void printChar_Time();
 
-    void displayStrings(const char *s1, const char *s2);
+    void displayStrings(const char *s);
     void displayNotImplemented();
     void displayScreenReversedPolarity();
 
-    void runCalibrateBeforeUse();
+    bool runAskResetEeprom(uint8_t what);
+    void runResetEepromDone(uint8_t before, uint8_t after);
     void runNotImplemented();
+    void runWelcomeScreen();
+
+    void runNeedForceBalance();
 };
 
 #endif /* SCREEN_H_ */

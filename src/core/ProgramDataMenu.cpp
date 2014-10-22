@@ -21,28 +21,25 @@
 #include "Utils.h"
 #include "Buzzer.h"
 
-
-const char string_PDMM0[] PROGMEM = "Bat:  ";
-const char string_PDMM1[] PROGMEM = "V:  ";
-const char string_PDMM2[] PROGMEM = "Ch: ";
-const char string_PDMM3[] PROGMEM = "Ic: ";
-const char string_PDMM4[] PROGMEM = "Id: ";
-const char string_PDMM5[] PROGMEM = "Tlim: ";
-const char string_PDMM6[] PROGMEM = "Create name";
-const char string_PDMM7[] PROGMEM = "Edit name";
-const char string_PDMM8[] PROGMEM = "Reset name";
+using namespace programDataMenu;
 
 const char * const ProgramDataStaticMenu[] PROGMEM =
-{   
-        string_PDMM0,
-        string_PDMM1,
-        string_PDMM2,
-        string_PDMM3,
-        string_PDMM4,
-        string_PDMM5,
-        string_PDMM6,
-        string_PDMM7,
-        string_PDMM8,
+{
+        string_batteryType,
+        string_voltage,
+        string_capacity,
+        string_chargeCurrent,
+        string_dischargeCurrent,
+#ifdef ENABLE_TIME_LIMIT
+        string_timeLimit,
+#endif
+        string_createName,
+#ifdef ENABLE_PROGRAM_MENU_EDIT_NAME
+        string_editName,
+#endif
+#ifdef ENABLE_PROGRAM_MENU_RESET_NAME
+        string_resetName,
+#endif
         NULL
 };
 
@@ -53,15 +50,15 @@ ProgramDataMenu::ProgramDataMenu(const ProgramData &p, int programIndex):
 
 void ProgramDataMenu::editName()
 {
-    EditName editName(p_.name, PROGRAM_DATA_MAX_NAME, PSTR("Edit name:"));
+    EditName editName(p_.name, PROGRAM_DATA_MAX_NAME, string_editedName);
     editName.run();
     render();
 }
 
 void ProgramDataMenu::createName()
-{ 
+{
     p_.createName(programIndex_+1);
-    waitName();   
+    waitName();
 }
 
 void ProgramDataMenu::resetName()
@@ -73,7 +70,7 @@ void ProgramDataMenu::waitName()
 {
     lcdClear();
     lcdSetCursor0_0();
-    lcdPrint_P(PSTR("Name:"));
+    lcdPrint_P(string_name);
     lcdSetCursor0_1();
     lcdPrint(p_.name, PROGRAM_DATA_MAX_NAME);
     waitButtonPressed();
@@ -81,42 +78,41 @@ void ProgramDataMenu::waitName()
 }
 
 
-uint8_t ProgramDataMenu::printItem(uint8_t index)
+void ProgramDataMenu::printItem(uint8_t index)
 {
     StaticMenu::printItem(index);
     if(getBlinkIndex() != index) {
+        START_CASE_COUNTER;
         switch (index) {
-            case 0:    p_.printBatteryString(); break;
-            case 1:    p_.printVoltageString(); break;
-            case 2:    p_.printChargeString();  break;
-            case 3:    p_.printIcString();      break;
-            case 4:    p_.printIdString();      break;
-#ifdef ENABLE_TIME_LIMIT               
-            case 5:    p_.printTimeString();    break;
-#endif            
+            case NEXT_CASE:    p_.printBatteryString(); break;
+            case NEXT_CASE:    p_.printVoltageString(); break;
+            case NEXT_CASE:    p_.printChargeString();  break;
+            case NEXT_CASE:    p_.printIcString();      break;
+            case NEXT_CASE:    p_.printIdString();      break;
+#ifdef ENABLE_TIME_LIMIT
+            case NEXT_CASE:    p_.printTimeString();    break;
+#endif
         }
     }
-    return 0;
 }
 
 void ProgramDataMenu::editItem(uint8_t index, uint8_t key)
 {
     int dir = -1;
     if(key == BUTTON_INC) dir = 1;
-//    dir *= keyboard.getSpeedFactor();
 
+    START_CASE_COUNTER;
     switch(index) {
-    case 0: p_.changeBattery(dir);     break;
-    case 1: p_.changeVoltage(dir);     break;
-    case 2: p_.changeCharge(dir);     break;
-    case 3: p_.changeIc(dir);         break;
-    case 4: p_.changeId(dir);         break;
-#ifdef ENABLE_TIME_LIMIT      
-    case 5: p_.changeTime(dir);         break;
-#endif     
+        case NEXT_CASE: p_.changeBattery(dir);    break;
+        case NEXT_CASE: p_.changeVoltage(dir);    break;
+        case NEXT_CASE: p_.changeCharge(dir);     break;
+        case NEXT_CASE: p_.changeIc(dir);         break;
+        case NEXT_CASE: p_.changeId(dir);         break;
+#ifdef ENABLE_TIME_LIMIT
+        case NEXT_CASE: p_.changeTime(dir);       break;
+#endif
     }
 }
-
 
 void ProgramDataMenu::run() {
     int8_t index;
@@ -124,15 +120,22 @@ void ProgramDataMenu::run() {
         index = runSimple();
 
         if(index < 0) return;
+
+        START_CASE_COUNTER_FROM(sizeOfArray(ProgramDataStaticMenu)
+#ifdef ENABLE_PROGRAM_MENU_EDIT_NAME
+                  -1
+#endif
+#ifdef ENABLE_PROGRAM_MENU_RESET_NAME
+                  -1
+#endif
+                  -1 -1);
         switch(index) {
-#ifdef ENABLE_TIME_LIMIT              
-        case 6: createName(); break;
-        case 7: editName(); break;
-        case 8: resetName(); break;
-#else
-        case 5: createName(); break;
-        case 6: editName(); break;
-        case 7: resetName(); break;    
+            case NEXT_CASE: createName(); break;
+#ifdef ENABLE_PROGRAM_MENU_EDIT_NAME
+            case NEXT_CASE: editName();   break;
+#endif
+#ifdef ENABLE_PROGRAM_MENU_RESET_NAME
+            case NEXT_CASE: resetName();  break;
 #endif
         default:
             ProgramData undo(p_);

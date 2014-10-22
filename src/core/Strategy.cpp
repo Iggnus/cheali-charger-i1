@@ -24,18 +24,23 @@
 #include "PolarityCheck.h"
 #include "AnalogInputs.h"
 
-#include "IO.h"			//ign
+
 #include "ProgramData.h" 	 //ign
 #include "TheveninChargeStrategy.h"		//ign
 #include "TheveninDischargeStrategy.h"		//ign
+#include "IO.h"			//ign
 
+//#include "SerialLog.h"    //ign
 
 namespace Strategy {
   uint8_t OnTheFly_;
-    const VTable * strategy_;
+  bool OnTheFly_blink;
+    const VTable * strategy;
+    bool exitImmediately;
 
 
     void chargingComplete() {
+        Monitor::powerOff();
         lcdClear();
         //Screen::displayScreenProgramCompleted();
 #ifndef ENABLE_T_INTERNAL
@@ -60,6 +65,7 @@ namespace Strategy {
     }
 
     void chargingMonitorError() {
+        Monitor::powerOff();
         lcdClear();
         Screen::displayMonitorError();
         Buzzer::soundError();
@@ -68,32 +74,30 @@ namespace Strategy {
     }
 
     void strategyPowerOn() {
-        void (*powerOn)() = pgm::read(&strategy_->powerOn);
+        void (*powerOn)() = pgm::read(&strategy->powerOn);
 		OnTheFly_ = 0;
         powerOn();
     }
     void strategyPowerOff() {
-        void (*powerOff)() = pgm::read(&strategy_->powerOff);
+        void (*powerOff)() = pgm::read(&strategy->powerOff);
         powerOff();
     }
     Strategy::statusType strategyDoStrategy() {
-        Strategy::statusType (*doStrategy)() = pgm::read(&strategy_->doStrategy);
+        Strategy::statusType (*doStrategy)() = pgm::read(&strategy->doStrategy);
         return doStrategy();
     }
 
 
-    bool analizeStrategyStatus(Strategy::statusType status, bool exitImmediately) {
+    bool analizeStrategyStatus(Strategy::statusType status) {
         bool run = true;
         if(status == Strategy::ERROR) {
-            Screen::powerOff();
             strategyPowerOff();
-            AnalogInputs::powerOff();   //disconnect the battery (pin12 off)
+//            AnalogInputs::powerOff();   //disconnect the battery (pin12 off)
             chargingMonitorError();
             run = false;
         }
 
         if(status == Strategy::COMPLETE) {
-            Screen::powerOff();
             strategyPowerOff();
             if(!exitImmediately)
                 chargingComplete();
@@ -102,24 +106,24 @@ namespace Strategy {
         return run;
     }
 
-    Strategy::statusType doStrategy(const Screen::ScreenType chargeScreens[], bool exitImmediately)
+    Strategy::statusType doStrategy(const Screen::ScreenType chargeScreens[])
     {
         uint8_t key;
         bool run = true;
         uint16_t newMesurmentData = 0;
         Strategy::statusType status = Strategy::RUNNING;
         strategyPowerOn();
-        Screen::powerOn();
-        Monitor::powerOn();
         lcdClear();
         uint8_t screen_nr = 0;
         do {
             if(!PolarityCheck::runReversedPolarityInfo()) {
                 Screen::display(pgm::read(&chargeScreens[screen_nr]));
             }
-            {
+
             //change displayed screen
             key =  Keyboard::getPressedWithSpeed();
+			if(key) OnTheFly_blink = true;
+			else OnTheFly_blink = !OnTheFly_blink;
 
 			if(key == BUTTON_START) {
 				if(Keyboard::getSpeed() || OnTheFly_ >= 2) OnTheFly_ = 0;
@@ -192,40 +196,35 @@ namespace Strategy {
 					
 			else {
 				if(key == BUTTON_INC && pgm::read(&chargeScreens[screen_nr+1]) != Screen::ScreenEnd) {
-#ifndef ENABLE_T_INTERNAL //TODO: after program complete, reconnect battery but wrong cell measurement if disconnected
 					if(status == Strategy::COMPLETE) {hardware::setBatteryOutput(true); }  // ADD THIS LINE TO TURN ON THE FAN
-#endif
 
-#ifdef ENABLE_SCREENANIMATION
+#ifdef ENABLE_SCREEN_ANIMATION
 					Screen::displayAnimation();
 #endif
-					screen_nr++;
-				}
-				if(key == BUTTON_DEC && screen_nr > 0) {
-#ifdef ENABLE_SCREENANIMATION
-					Screen::displayAnimation();
-#endif
-					screen_nr--;
+                    screen_nr++;
                 }
-            }
+                if(key == BUTTON_DEC && screen_nr > 0) {
+#ifdef ENABLE_SCREEN_ANIMATION
+                    Screen::displayAnimation();
+#endif
+                    screen_nr--;
+                }
             }
 
             if(run) {
                 status = Monitor::run();
-                run = analizeStrategyStatus(status, exitImmediately);
+                run = analizeStrategyStatus(status);
 
                 if(run && newMesurmentData != AnalogInputs::getFullMeasurementCount()) {
                     newMesurmentData = AnalogInputs::getFullMeasurementCount();
                     status = strategyDoStrategy();
-                    run = analizeStrategyStatus(status, exitImmediately);
+                    run = analizeStrategyStatus(status);
                 }
             }
             if(!run && exitImmediately)
                 return status;
-
         } while(key != BUTTON_STOP || !Keyboard::getSpeed());
 
-        Screen::powerOff();
         strategyPowerOff();
         return status;
     }

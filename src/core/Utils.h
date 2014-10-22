@@ -30,10 +30,11 @@
 
 //info: I use __ COUNTER__ which is not supported by some compilers
 #define START_CASE_COUNTER const uint8_t _case_counter = __COUNTER__
+#define START_CASE_COUNTER_FROM(x) const uint8_t _case_counter = __COUNTER__ - (x)
 #define NEXT_CASE (__COUNTER__ - _case_counter - 1)
 
 //assert
-#define STATIC_ASSERT(x) typedef char __STATIC_ASSERT__[( x )?1:-1]
+#define STATIC_ASSERT(x) typedef char __STATIC_ASSERT__[( x )?1:-1] __attribute__((unused))
 
 //Preprocessor: concatenate int to string
 #define CHEALI_CHARGER_STRING2(x)   #x
@@ -52,7 +53,7 @@ void change0ToMaxSmart(uint16_t &v, int direc, uint16_t max, int16_t step, uint8
 void change0ToMax(uint16_t &v, int direc, uint8_t max);
 void change1ToMax(uint16_t &v, int direc, uint8_t max);
 
-void waitButtonPressed();
+uint8_t waitButtonPressed();
 #ifdef FREEZE_COMPLETED
 bool waitButtonPressedLimTime();
 #endif

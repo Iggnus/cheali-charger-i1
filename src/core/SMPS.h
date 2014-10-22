@@ -20,8 +20,7 @@
 #ifndef SMPS_H_
 #define SMPS_H_
 
-#include "AnalogInputs.h"
-#include "Timer.h"
+#include <inttypes.h>
 
 namespace SMPS {
     enum STATE { CHARGING, CHARGING_COMPLETE, ERROR, STOP};
@@ -34,9 +33,7 @@ namespace SMPS {
 
     uint16_t getValue();
     void setValue(uint16_t value);
-    
     uint16_t setSmoothI(uint16_t value, uint16_t value_);
-
     void setRealValue(uint16_t I);
 
     void powerOn();

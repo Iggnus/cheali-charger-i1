@@ -34,17 +34,13 @@ namespace DeltaChargeStrategy {
         SimpleChargeStrategy::powerOff,
         doStrategy
     };
-
-
 }
-
 
 void DeltaChargeStrategy::powerOn()
 {
     state_ = PreCharge;
     SimpleChargeStrategy::powerOn();
 }
-
 
 Strategy::statusType DeltaChargeStrategy::doStrategy()
 {
@@ -59,7 +55,7 @@ Strategy::statusType DeltaChargeStrategy::doStrategy()
     }
 
     if(AnalogInputs::isOutStable() && Vout > ProgramData::currentProgramData.getVoltage(ProgramData::VUpperLimit)) {
-        Program::stopReason_ = PSTR("V limit");
+        Program::stopReason_ = string_batteryVoltageReachedUpperLimit;
         return Strategy::COMPLETE;
     }
 
@@ -67,17 +63,17 @@ Strategy::statusType DeltaChargeStrategy::doStrategy()
         return Strategy::RUNNING;
 
     if(settings.enable_deltaV_) {
-        int x = AnalogInputs::getRealValue(AnalogInputs::deltaVout);
+        int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaVout);
         x=-x;
         if(x > ProgramData::currentProgramData.getDeltaVLimit()) {
-            Program::stopReason_ = PSTR("-dV");
+            Program::stopReason_ = string_batteryVoltageReachedDeltaVLimit;
             return Strategy::COMPLETE;
         }
     }
     if(settings.externT_) {
-        int x = AnalogInputs::getRealValue(AnalogInputs::deltaTextern);
+    	int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaTextern);
         if(x > ProgramData::currentProgramData.getDeltaTLimit()) {
-            Program::stopReason_ = PSTR("dT/dt");
+            Program::stopReason_ = string_externalTemperatureReachedDeltaTLimit;
             return Strategy::COMPLETE;
         }
     }

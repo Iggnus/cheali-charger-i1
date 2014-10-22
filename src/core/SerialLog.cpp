@@ -16,7 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "Hardware.h"
-#include "Timer.h"
 #include "LcdPrint.h"
 #include "Program.h"
 #include "Settings.h"
@@ -32,8 +31,7 @@
 #include "Serial.h"
 #endif //ENABLE_SERIAL_LOG
 
-//TODO_NJ
-#include "Screen.h"
+#include "Monitor.h"
 
 namespace SerialLog {
     enum State { On, Off, Starting };
@@ -68,18 +66,17 @@ void sendTime();
 
 void serialBegin()
 {
-    Serial.begin(settings.getUARTspeed());
+    Serial::begin(settings.getUARTspeed());
 }
 void serialEnd()
 {
-    Serial.flush();
-    Serial.end();
-    IO::pinMode(10, INPUT);
+    Serial::flush();
+    Serial::end();
 }
 
 void printChar(char c)
 {
-    Serial.write(c);
+    Serial::write(c);
     CRC^=c;
 }
 
@@ -109,7 +106,7 @@ void send()
     if(state == Off)
         return;
 
-    currentTime = Timer::getMiliseconds();
+    currentTime = Time::getMiliseconds();
 
     if(state == Starting) {
         startTime = currentTime;
@@ -174,9 +171,11 @@ void printUInt(uint16_t x)
 
 void printULong(uint32_t x)
 {
-    char buf[8];
+//    char buf[8];
+    char buf[15];
     char *str = buf;
-    uint8_t maxSize = 7;
+//    uint8_t maxSize = 7;
+    uint8_t maxSize = 14;
     ::printULong(str, maxSize, x);
     printString(buf);
 }
@@ -186,6 +185,7 @@ void printULong(uint32_t x)
 void sendHeader(uint16_t channel)
 {
 //return; //ign
+
     CRC = 0;
     printChar('$');
     printUInt(channel);
@@ -216,16 +216,17 @@ void sendEnd()
 void sendChannel1()
 {
 //return; //ign
+
     sendHeader(1);
     //analog inputs
-    for(int8_t i=0;i < sizeOfArray(channel1);i++) {
+    for(uint8_t i=0;i < sizeOfArray(channel1);i++) {
         AnalogInputs::Name name = pgm::read(&channel1[i]);
         uint16_t v = AnalogInputs::getRealValue(name);
         printUInt(v);
         printD();
     }
 
-    for(int8_t i=0;i<MAX_BANANCE_CELLS;i++) {
+    for(uint8_t i=0;i<MAX_BANANCE_CELLS;i++) {
         printUInt(TheveninMethod::getReadableRthCell(i));
         printD();
     }
@@ -235,14 +236,12 @@ void sendChannel1()
 
     printUInt(TheveninMethod::getReadableWiresRth());
     printD();
-    
-    //TODO_NJ (procent/ETA)
-    printUInt(Screen::getChargeProcent());
+
+    printUInt(Monitor::getChargeProcent());
     printD();
-    printUInt(Screen::getETATime());   //timestamp
+    printUInt(Monitor::getETATime());
     printD();
-    //TODO_NJ end
-    
+
     sendEnd();
 }
 
@@ -271,7 +270,7 @@ void sendChannel2(bool adc)
 void sendChannel3()
 {
     sendHeader(3);
-#ifdef ENABLE_SERIAL_LOG
+#ifdef    ENABLE_STACK_INFO //ENABLE_SERIAL_LOG
     printUInt(StackInfo::getNeverUsedStackSize());
     printD();
     printUInt(StackInfo::getFreeStackSize());
@@ -292,50 +291,12 @@ void sendTime()
         adc = true;
     }
     sendChannel1();
-    if(uart>Settings::Normal)
+    if(uart > Settings::Normal)
         sendChannel2(adc);
 
-    if(uart>Settings::Debug)
+    if(uart > Settings::Debug)
         sendChannel3();
 
-}
-
-void printV(char c,uint8_t nr, AnalogInputs::ValueType value)
-{
-    printChar(c);
-    printUInt(nr);
-    printChar('=');
-    printUInt(value);
-    printNL();
-}
-
-void dumpCalibration()
-{
-    printString("V=" CHEALI_CHARGER_VERSION_STRING);
-    printNL();
-    printV('E',0,CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION);
-    printV('E',1,CHEALI_CHARGER_EEPROM_PROGRAMDATA_VERSION);
-    printV('E',2,CHEALI_CHARGER_EEPROM_SETTINGS_VERSION);
-
-    AnalogInputs::CalibrationPoint p;
-    FOR_ALL_PHY_INPUTS(it) {
-        AnalogInputs::getCalibrationPoint(p,it,0);
-        printV('a',it, p.x);
-        printV('r',it, p.y);
-        AnalogInputs::getCalibrationPoint(p,it,1);
-        printV('A',it, p.x);
-        printV('R',it, p.y);
-    }
-}
-void sendCalibration()
-{
-//return; //ign
-    serialBegin();
-    dumpCalibration();
-    printNL();
-    dumpCalibration();
-    printNL();
-    serialEnd();
 }
 
 } //namespace SerialLog

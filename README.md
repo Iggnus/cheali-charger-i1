@@ -1,16 +1,21 @@
+Welcome to cheali-charger!
+
+Fork of ARM-compatible Pawel's firmware (Branch:master)
+
+---
+
 FOR TESTING.
 
 
-Plus Features
--------------
+additional features
+-------------------
 
-new
-+ Dynamicly calculated maximum current
 
-Please do not work with batteries which use dynamic current mode at chargers without this feature
-+ Freeze and show voltage and current at the end of charging/discharging  
-___
++ Dynamicly calculated maximum current (#define DYNAMIC_MAX_CURRENT)
++ Dynamicly calculated maximum current (disabled by default! DYNAMIC_MAX_POWER)
+Please do not write EEPROM with batteries which use dynamic modes to chargers without this feature
 
++ Freeze and show voltage and current at the end of charging/discharging
 + Manual/Automatic scrolling for Cycle History screens
 + On-the-fly adjustable current (NiMH and NiCD - need STOP/START)
 + adjustable voltage (before process)
@@ -23,73 +28,22 @@ Now it is possible to change main parameters while charging discharging and cycl
 New voltage/current will be actual till the battery type change. It does not stores to EEPROM.
 New capacity limit will be used only once. Capacity limit reaching is no longer acts like an error - so it can be used for skip first discharge in cycling mode
 
-
-Icluded Features (from Jozsef Nagy)
------------------------------------
- - Simple Estimated Time for Accomplishment (TESTING)
- - Powerscren (Watt and Watthour)
- - cycle discharge/wait/charge program for Nixx and Lixx etc.
- - cyclehistory screen
- - Lixx charge without balancer-port
- - time limit per battery plus Unlimited time.
- - Unknown battery voltage stepping 0.1V always.
- - smooth current rising/falling (protect the power supply voltage-breakdown) (limited current riseing/falling speed: 3A/sec(>50W chargers))
- - graphical balance status (compiler optionnally)
- - Li-Ion 4.30V and 4.35V supported
- - simple charging-percent meter
- - beep on/off
- - fan off this program end (50W chargers). (Thanks Pawel)
- - discharge-charge cycle Pb, NiZn, Lixx and Nixx batteries. (1S-lixx-cycle mode not working without balancer, sorry)
- - minimal I adjustable: 1/5*Ic to 1/50*Ic (higher value, longer charging time, but fully charged battery)
- - overload prevent hadware failure (partially protect for failure pump-charge FETs)
- - 200W+ uart-mode disable ext-temperature (for common wire ext-temp and serial Tx. NOT TESTED)
- - minimal adjustable current 100mA
- - Minimal internal current is 50mA (hardware limit)
- - sensing balancer connector breaking
- - balancer battery icons is one screen for 6 and 8 cell chargers
- - restore calibration overflow routines.
- - calculated and stored EEPROM PWM 'maxvalue' limits.
- - Hex-name and startup-name with current date.
- - update logview ini file
+___
 
 
+This project is an alternative firmware for the
+G.T. POWER A6-10 200W
+or IMAX B6
+Lipo charger.
 
-manuals:
---------
+Don't use it if You don't need to  
+(not everything is implemented yet).  
 
-English:   https://docs.google.com/document/d/1Nv2vBXbWo6qE2U9rXZfzVDTfWu3j778flImbFJp74tk/edit
-Hungarian: https://docs.google.com/file/d/0B1RXXTatsA1cWVJYbERUSWo5Q28/edit
-
-sample screens: http://www.youtube.com/watch?v=YQxE5fpoIbU
-
-
-
-hex/idnus folder for testing. NOT BURN YOUR CHARGER,
-strong_balancer modding info: 
-----------------------------
-http://file.emiter.hu/file/Modellezes/Cheali/Tuning/HK_es_TURNIGY_TOLTO_BALANSZ_tuning_javitott.pdf
-http://rc-miskolc.emiter.hu/rc-miskolc/index.php?option=com_content&view=article&id=278&Itemid=205
-
-plus zero_amp option: 
---------------------
-adjustable current from 0 (for testing)
-
-
-
-
-
-
-
-
-
-
-
-original source and hex:
+Any feedback is very welcome!  
 https://github.com/stawel/cheali-charger
-Thanks Pawel.   
 
-Icluded Features (from Pawel Stawicki)
----------------------------
+Features
+--------
 - Li-ion, LiPo and LiFe:
   - charging
   - fast charging
@@ -138,14 +92,47 @@ Hardware
 - .... - any suggestions are very welcome
 
 
+Building from Source
+--------------------
+dependencies: cmake, avrdude, avr-libc, gcc-avr
 
+<pre>
+user@~$ sudo apt-get install cmake avrdude avr-libc gcc-avr git
+
+user@~$ git clone https://github.com/stawel/cheali-charger.git
+user@~$ cd cheali-charger
+
+user@~/cheali-charger$ ./bootstrap
+user@~/cheali-charger$ make
+
+flashing GTPowerA6-10 with USBasp:
+
+user@~/cheali-charger$ cd src/hardware/GTPowerA6-10-original/
+user@~/cheali-charger/src/hardware/GTPowerA6-10-original$ ./progUSBasp.sh
+
+flashing imaxB6-original with USBasp:
+
+user@~/cheali-charger$ cd src/hardware/imaxB6-original/
+user@~/cheali-charger/src/hardware/imaxB6-original$ ./progUSBasp.sh
+
+flashing imaxB6-clone with USBasp:
+
+user@~/cheali-charger$ cd src/hardware/imaxB6-clone/
+user@~/cheali-charger/src/hardware/imaxB6-clone$ ./progUSBasp.sh
+
+
+</pre>
+
+Now You should see a "ChealiCharger welcome" screen.
+
+Done.
 
 Flashing: G.T. POWER A6-10 200W
 -------------------------------
 
 - Connect a standard AVR ISP 10-pin cable to the board: https://github.com/stawel/cheali-charger/blob/master/docs/GTPowerA6-10/front.jpg
 - set "Device" to: atmega32
-- use the cheali-charger/hex/cheali-charger-GTPowerA6-10-0.32.hex file as "Flash"
+- use the cheali-charger/hex/cheali-charger-GTPowerA6-10-0.33.hex file as "Flash"
 
 
 Flashing: IMAX B6
@@ -155,7 +142,7 @@ Flashing: IMAX B6
     - IMAX B6 - original: https://github.com/stawel/cheali-charger/blob/master/docs/imaxB6/imaxB6-original-front.jpg
     - IMAX B6 - clone: https://github.com/stawel/cheali-charger/blob/master/docs/imaxB6/imaxB6-clone-front.jpg
 - set "Device" to: atmega32
-- use the cheali-charger/hex/cheali-charger-imaxB6-original-0.32.hex  (or cheali-charger-imaxB6-clone-0.32.hex) file as "Flash"
+- use the cheali-charger/hex/cheali-charger-imaxB6-original-0.33.hex  (or cheali-charger-imaxB6-clone-0.33.hex) file as "Flash"
 
 
 Calibration (IMAX B6 and G.T. POWER A6-10 200W)
@@ -235,7 +222,6 @@ The mailing list is open for all.
 
 
 Have fun!
-
 
 
 

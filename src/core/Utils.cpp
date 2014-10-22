@@ -18,6 +18,7 @@
 
 #include "Utils.h"
 #include "Hardware.h"
+#include "AnalogInputs.h"
 #include "memory.h"
 
 uint8_t countElements(const char * const* staticMenu)
@@ -84,19 +85,15 @@ void change1ToMax(uint16_t &v, int dir, uint8_t max)
     else v+=dir;
 }
 
-
 void change0ToMaxSmart(uint16_t &v, int dir, uint16_t max)
 {
     return change0ToMaxSmart(v, dir, max, 0, 0);
 }
 
-
-
 void change100ToMaxSmart(uint16_t &v, int dir, uint16_t max)
 {
     return change0ToMaxSmart(v, dir, max, 0, 100);
 }
-
 
 void change0ToMaxSmart(uint16_t &v, int dir, uint16_t max, int16_t step, uint8_t starting)
 {
@@ -118,10 +115,17 @@ void change0ToMaxSmart(uint16_t &v, int dir, uint16_t max, int16_t step, uint8_t
     else SUB_MIN(v, step ,starting);
 }
 
-void waitButtonPressed()
+uint8_t waitButtonPressed()
 {
+    uint8_t key;
+
     while(Keyboard::getPressedWithSpeed() != BUTTON_NONE);
-    while(Keyboard::getPressedWithSpeed() == BUTTON_NONE);
+
+    do {
+        key = Keyboard::getPressedWithSpeed();
+    } while(key == BUTTON_NONE);
+
+    return key;
 }
 
 #ifdef FREEZE_COMPLETED
@@ -129,7 +133,8 @@ bool waitButtonPressedLimTime()
 {
 	for(uint8_t c = 0; c < 10; c++) {
 		if(Keyboard::getPressed()) return true;
-		Timer::delayIdle(100);
+		Time::delayDoIdle(100);
+	//	Time::delay(100);
 	}
 	return false;
 }

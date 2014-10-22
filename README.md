@@ -1,10 +1,11 @@
 Welcome to cheali-charger!
 
-Fork of ARM-compatible Pawel's firmware (Branch:master)
+Fork of ARM-compatible Pawel's firmware (Branch:master) https://github.com/stawel/cheali-charger/tree/master
 
 ---
 
-FOR TESTING.
+
+     FOR TESTING.
 
 
 additional features
@@ -12,8 +13,8 @@ additional features
 
 
 + Dynamicly calculated maximum current (#define DYNAMIC_MAX_CURRENT)
-+ Dynamicly calculated maximum current (disabled by default! DYNAMIC_MAX_POWER)
-Please do not write EEPROM with batteries which use dynamic modes to chargers without this feature
++ Dynamicly calculated maximum power (disabled by default! DYNAMIC_MAX_POWER)
+ Please do not write EEPROM with batteries which use dynamic modes to chargers without this feature
 
 + Freeze and show voltage and current at the end of charging/discharging
 + Manual/Automatic scrolling for Cycle History screens

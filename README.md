@@ -29,6 +29,9 @@ Now it is possible to change main parameters while charging discharging and cycl
 New voltage/current will be actual till the battery type change. It does not stores to EEPROM.
 New capacity limit will be used only once. Capacity limit reaching is no longer acts like an error - so it can be used for skip first discharge in cycling mode
 
+
+this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/EuhUAoyecso
+
 ___
 
 

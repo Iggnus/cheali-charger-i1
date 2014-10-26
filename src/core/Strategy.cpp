@@ -58,7 +58,7 @@ namespace Strategy {
 			Screen::displayScreenFirst();
 			if(waitButtonPressedLimTime()) break;
 		} while(true);
-		AnalogInputs::powerOn();
+		AnalogInputs::powerOn(false);
 #endif	
         Buzzer::soundOff();
 		hardware::setBatteryOutput(true);  //ign

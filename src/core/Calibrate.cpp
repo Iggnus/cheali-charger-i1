@@ -445,7 +445,7 @@ void run()
         i = menu.runSimple();
         if(i<0) break;
         SerialLog::powerOn();
-        AnalogInputs::powerOn();
+        AnalogInputs::powerOn(true);
         START_CASE_COUNTER;
         switch(i) {
         case NEXT_CASE: calibrateVoltage(); break;

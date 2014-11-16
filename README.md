@@ -38,10 +38,10 @@ this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/Eu
 CHANGES
 
 16.11.2014
-fix: dynamic power must not work with discharge
-fix: storage: charge for single sell
-dynamic power: power limitation for undervoltage modes
-blinking data visability improvment
+-fix: dynamic power must not work with discharge
+-fix: storage: charge for single sell
+-dynamic power: power limitation for undervoltage modes
+-blinking data visability improvment
 
 ___
 

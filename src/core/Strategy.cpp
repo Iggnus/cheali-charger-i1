@@ -35,6 +35,7 @@
 namespace Strategy {
   uint8_t OnTheFly_;
   bool OnTheFly_blink;
+  bool OnTheFly_blink2;
     const VTable * strategy;
     bool exitImmediately;
 
@@ -122,7 +123,8 @@ namespace Strategy {
 
             //change displayed screen
             key =  Keyboard::getPressedWithSpeed();
-			if(key) OnTheFly_blink = true;
+			if(key) {OnTheFly_blink = OnTheFly_blink2 = true;}
+			else if(OnTheFly_blink2) OnTheFly_blink2 = false;
 			else OnTheFly_blink = !OnTheFly_blink;
 
 			if(key == BUTTON_START) {

@@ -122,7 +122,7 @@ void doIdle()
     static int16_t analogCount;
     uint16_t getFullMeasurementCount();
     if(!AnalogInputs::isPowerOn()) {
-        analogCount = -1;
+        analogCount = 0;
     } else {
         uint16_t c = AnalogInputs::getFullMeasurementCount();
         if(analogCount != c) {

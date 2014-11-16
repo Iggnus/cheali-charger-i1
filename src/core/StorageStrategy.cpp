@@ -21,6 +21,8 @@
 #include "TheveninDischargeStrategy.h"
 #include "memory.h"
 
+//#include "SerialLog.h"  //ign
+
 namespace StorageStrategy {
 
     enum State  {Charge, Discharge, Balance};
@@ -50,8 +52,21 @@ void StorageStrategy::powerOff()
 
 void StorageStrategy::powerOn()
 {
+	bool ChargeIt;
     Balancer::powerOn();
-    if(Balancer::isMinVout(Balancer::calculatePerCell(V_))) {
+	
+if(AnalogInputs::isConnected(AnalogInputs::Vbalancer)) {
+	if(Balancer::isMinVout(Balancer::calculatePerCell(V_))) ChargeIt = true;
+	else ChargeIt = false;
+//SerialLog::printString("BAL "); SerialLog::printUInt(ChargeIt); SerialLog::printNL();  //ign
+}
+else {
+	if(V_ > AnalogInputs::getVout()) ChargeIt = true;
+	else ChargeIt = false;
+//SerialLog::printString("SNGL "); SerialLog::printUInt(ChargeIt); SerialLog::printNL();  //ign
+}
+
+    if(ChargeIt) {
         TheveninChargeStrategy::setVIB(V_, Ic_, false);
         TheveninChargeStrategy::powerOn();
         state = Charge;

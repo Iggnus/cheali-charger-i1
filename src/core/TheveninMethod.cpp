@@ -222,18 +222,20 @@ AnalogInputs::ValueType TheveninMethod::normalizeI(AnalogInputs::ValueType value
 #ifdef DYNAMIC_MAX_CURRENT
 	uint32_t i;
 	uint16_t v = AnalogInputs::getVout();
-	if(!IO::digitalRead(SMPS_DISABLE_PIN)) i = MAX_CHARGE_P;
-	else i = MAX_DISCHARGE_P;
-//	if(!IO::digitalRead(SMPS_DISABLE_PIN)) i =  ANALOG_WATT(2.000);
-//	else i =  ANALOG_WATT(2.000);
-	i *= ANALOG_VOLT(1);
+	if(!IO::digitalRead(SMPS_DISABLE_PIN)) {
+		i = MAX_CHARGE_P;
 #ifdef DYNAMIC_MAX_POWER	
-	if(AnalogInputs::getRealValue(AnalogInputs::Vin) > ANALOG_VOLT(10)) {
-		v += ANALOG_VOLT(10);
-		v -= AnalogInputs::getRealValue(AnalogInputs::Vin);
-		v++;
-	}
+		if(AnalogInputs::getRealValue(AnalogInputs::Vin) < ANALOG_VOLT(11))
 #endif	
+		{
+			v += ANALOG_VOLT(11);
+			v -= AnalogInputs::getRealValue(AnalogInputs::Vin);
+			v++;
+		}
+	}
+	else i = MAX_DISCHARGE_P;
+
+	i *= ANALOG_VOLT(1);
 	i /= v;
 	if(value > i) value = i;
 #endif

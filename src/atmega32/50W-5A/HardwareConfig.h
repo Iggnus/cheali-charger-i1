@@ -25,7 +25,7 @@
 #define MAX_CHARGE_P            ANALOG_WATT(50.000)               //50W
 
 #define MAX_DISCHARGE_P         ANALOG_WATT(5.000)                //5W
-#define MAX_DISCHARGE_I         ANALOG_AMP(2.000)   //should be 1A
+#define MAX_DISCHARGE_I         ANALOG_AMP(1.000)   //should be 1A
 
 
 //1-13? correlation
@@ -33,5 +33,6 @@
 #define DISCHARGER_UPPERBOUND_VALUE         TIMER1_PRECISION_PERIOD
 
 #endif /* HARDWARE_CONFIG_H_ */
+
 
 

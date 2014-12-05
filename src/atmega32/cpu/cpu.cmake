@@ -1,5 +1,5 @@
 
-set(CURRENT_PATH ${CMAKE_SOURCE_DIR}/src/atmega32/cpu)
+set(CURRENT_PATH ${CMAKE_SOURCE_DIR}/src/${TARGET_CPU}/cpu)
 
 set(CPU_SOURCE
         memory.h

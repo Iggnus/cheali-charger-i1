@@ -86,6 +86,16 @@ const char * const  batteryString[ProgramData::LAST_BATTERY_TYPE] PROGMEM = {
         string_battery_NiZn
 };
 
+ProgramData::BatteryClass ProgramData::getBatteryClass() const {
+    if( battery.type == NiZn) return ClassNiZn;
+    if( battery.type == Life  || battery.type == Lilo  || battery.type == Lipo
+     || battery.type == Li430 || battery.type == Li435) return ClassLiXX;
+    if( battery.type == NiCd  || battery.type == NiMH) return ClassNiXX;
+    return ClassPb;
+}
+
+
+
 void ProgramData::printIndex(char *&buf, uint8_t &maxSize, uint8_t index)
 {
     printUInt(buf, maxSize, index);
@@ -135,7 +145,7 @@ uint16_t ProgramData::getVoltage(VoltageType type) const
 uint16_t ProgramData::getCapacityLimit() const
 {
     uint32_t cap = battery.C;
-    cap *= settings.capCutoff_;
+    cap *= settings.capCutoff;
     cap/=100;
     if(cap>PROGRAM_DATA_MAX_CHARGE)
         cap = PROGRAM_DATA_MAX_CHARGE;
@@ -145,8 +155,8 @@ uint16_t ProgramData::getCapacityLimit() const
 int16_t ProgramData::getDeltaVLimit() const
 {
     int16_t v = 0;
-    if(battery.type == NiCd) v = settings.deltaV_NiCd_;
-    if(battery.type == NiMH) v = settings.deltaV_NiMH_;
+    if(battery.type == NiCd) v = settings.deltaV_NiCd;
+    if(battery.type == NiMH) v = settings.deltaV_NiMH;
     return battery.cells * v;
 }
 
@@ -217,7 +227,7 @@ void change(val_t &v, int direction, uint16_t max)
 {
 }
 
-void ProgramData::changeBattery(int direction)
+void ProgramData::changeBatteryType(int direction)
 {
     battery.type+=direction;
     if(battery.type>=LAST_BATTERY_TYPE) {
@@ -243,40 +253,13 @@ void ProgramData::changeCharge(int direction)
     check();
 }
 
-/* uint16_t ProgramData::MAX_CHARGE_P()
-{
-    uint32_t i;
-    uint16_t v;
-
-    v = AnalogInputs::getRealValue(AnalogInputs::Vin);
-	v -= ANALOG_VOLT(10);
-	if(AnalogInputs::getRealValue(AnalogInputs::Vin) > ANALOG_VOLT(10)) {
-		v += ANALOG_VOLT(10);
-		v -= AnalogInputs::getRealValue(AnalogInputs::Vin);
-		v++;
-	}
-} */
-
 uint16_t ProgramData::getMaxIc() const
 {
     uint32_t i;
     uint16_t v;
-#ifdef DYNAMIC_MAX_CURRENT
     v = getVoltage(VDischarge);
-#else
-    v = getVoltage(VCharge);
-#endif
     i = MAX_CHARGE_P;
     i *= ANALOG_VOLT(1);
-#ifdef DYNAMIC_MAX_CURRENT
- #ifdef DYNAMIC_MAX_POWER	
-	if(AnalogInputs::getRealValue(AnalogInputs::Vin) > ANALOG_VOLT(10)) {
-		v += ANALOG_VOLT(10);
-		v -= AnalogInputs::getRealValue(AnalogInputs::Vin);
-		v++;
-	}
- #endif	
-#endif	
     i /= v;
 
     if(i > MAX_CHARGE_I)
@@ -288,11 +271,7 @@ uint16_t ProgramData::getMaxId() const
 {
     uint32_t i;
     uint16_t v;
-#ifdef DYNAMIC_MAX_CURRENT
     v = getVoltage(VDischarge);
-#else
-    v = getVoltage(VCharge);
-#endif
     i = MAX_DISCHARGE_P;
     i *= ANALOG_VOLT(1);
     i /= v;
@@ -307,7 +286,8 @@ void ProgramData::changeIc(int direction)
 #ifdef ENABLE_ZERO_AMP
     change0ToMaxSmart(battery.Ic, direction, getMaxIc());
 #else
-    change100ToMaxSmart(battery.Ic, direction, getMaxIc());
+//    change100ToMaxSmart(battery.Ic, direction, getMaxIc());
+    change0ToMaxSmart(battery.Ic, direction, getMaxIc(), 0, settings.minIout*2);		//ign
 #endif    
 }
 void ProgramData::changeId(int direction)
@@ -315,7 +295,8 @@ void ProgramData::changeId(int direction)
 #ifdef ENABLE_ZERO_AMP    
     change0ToMaxSmart(battery.Id, direction, getMaxId());
 #else
-    change100ToMaxSmart(battery.Id, direction, getMaxId());
+//    change100ToMaxSmart(battery.Id, direction, getMaxId());
+    change0ToMaxSmart(battery.Id, direction, getMaxId(), 0, settings.minIout*2);		//ign
 #endif 
 }
 

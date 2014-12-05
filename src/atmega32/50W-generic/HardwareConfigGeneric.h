@@ -25,11 +25,11 @@
 #define LCD_COLUMNS             16
 
 #define MAX_BANANCE_CELLS       6
-#define TIMER1_PERIOD           256
+#define TIMER1_PERIOD           512
 
-#define CALIBRATION_CHARGE_POINT0_mA    50
+#define CALIBRATION_CHARGE_POINT0_mA    100
 #define CALIBRATION_CHARGE_POINT1_mA    1000
-#define CALIBRATION_DISCHARGE_POINT0_mA 50
+#define CALIBRATION_DISCHARGE_POINT0_mA 100
 #define CALIBRATION_DISCHARGE_POINT1_mA 300
 
 
@@ -47,11 +47,15 @@
 
 #define SETTINGS_EXTERNAL_T_DEFAULT 0
 
-
-#define ENABLE_SCREEN_ANIMATION
 #define ENABLE_TIME_LIMIT
 #define ENABLE_LCD_RAM_CG
+#define ENABLE_SCREEN_ANIMATION
 //#define ENABLE_SCREEN_KNIGHTRIDEREFFECT
+#define FREEZE_COMPLETED
+#define MANUAL_HISTORY
+
+#define ENABLE_PROGRAM_MENUS_LIXX_CYCLING
+#define ENABLE_PROGRAM_MENUS_NIZN_CYCLING
 
 
 #define ENABLE_EEPROM_CRC
@@ -63,18 +67,9 @@
 
 #define ENABLE_CALIBRATION
 
-#define STRINGS_HEADER "standard.h"
+#define ANALOG_INPUTS_ADC_RESOLUTION     10  // bits
 
-#define MANUAL_HISTORY
-#define FREEZE_COMPLETED
-//Do not work with batteries which use dynamic current mode at chargers without this feature!
-#define DYNAMIC_MAX_CURRENT
-//#define DYNAMIC_MAX_POWER
+
+#define STRINGS_HEADER "strings/standard.h"
 
 #endif /* HARDWARE_CONFIG_GENERIC_H_ */
-
-
-
-
-
-

@@ -1,6 +1,6 @@
 Welcome to cheali-charger!
 
-Fork of ARM-compatible Pawel's firmware (Branch:master) https://github.com/stawel/cheali-charger/tree/master
+Fork of ARM-compatible Pawel's firmware (Branch:master at 5.12.2014) https://github.com/stawel/cheali-charger/tree/master
 
 ---
 
@@ -8,44 +8,40 @@ Fork of ARM-compatible Pawel's firmware (Branch:master) https://github.com/stawe
      FOR TESTING.
 
 
-additional features
--------------------
+changes
+-------
 
 
-+ Dynamicly calculated maximum current (#define DYNAMIC_MAX_CURRENT)
-+ Dynamicly calculated maximum power (disabled by default! DYNAMIC_MAX_POWER)
- Please do not write EEPROM with batteries which use dynamic modes to chargers without this feature
-
++ On-the-fly adjustable current
 + Freeze and show voltage and current at the end of charging/discharging
 + Manual/Automatic scrolling for Cycle History screens
-+ On-the-fly adjustable current (NiMH and NiCD - need STOP/START)
 + adjustable voltage (before process)
 + On-the-fly adjustable capacity limit (limits screen)
++ minimal adjustable current - 2x minIout
 + batteries can be charged from 0 voltage
 + long press Stop key for stop - prevents accidental stop with loosing data
+
+* changed routine for energy calculation
+* improoved Time::diffU16() routine
+* improoved delay accuracy  (DelayStrategy switched to seconds)
 
 
 Now it is possible to change main parameters while charging discharging and cycling.
 New voltage/current will be actual till the battery type change. It does not stores to EEPROM.
-New capacity limit will be used only once. Capacity limit reaching is no longer acts like an error - so it can be used for skip first discharge in cycling mode
+New capacity limit will be used only once. Capacity limit can be used for skip first discharge in cycling mode
 
+On-the-fly current adjustment in not tested with NiCD and NiMH
 
 this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/EuhUAoyecso
 
 
 ---
 
-CHANGES
+changes
 
-16.11.2014
+05.12.2014
 
-fix: dynamic power must not work with discharge
 
-fix: storage: charge for single sell
-
-dynamic power: power limitation for undervoltage modes
-
-blinking data visability improvment
 
 ___
 

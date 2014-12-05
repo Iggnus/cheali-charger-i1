@@ -21,91 +21,40 @@
 #include "DelayStrategy.h"
 #include "Settings.h"
 #include "Monitor.h"
-
-//#include "SerialLog.h"		//ign
+#include "ScreenCycle.h"
 
 using namespace Program;
 
 namespace ProgramDCcycle {
     uint8_t currentCycle;
-    char cycleMode;
 
-    Strategy::statusType runCycleDischargeCommon(BatteryGroup prog1);
-    Strategy::statusType runCycleChargeCommon(BatteryGroup prog1);
+    Strategy::statusType runDCRestTime()
+    {
+        DelayStrategy::setDelay(settings.DCRestTime);
+        Strategy::strategy = &DelayStrategy::vtable;
+        return Strategy::doStrategy();
+    }
 }
 
-Strategy::statusType ProgramDCcycle::runDCcycle(BatteryGroup prog1)
-{ //TODO_NJ
+
+Strategy::statusType ProgramDCcycle::runDCcycle()
+{
     Strategy::statusType status = Strategy::COMPLETE;
     Strategy::exitImmediately = true;
-    for(currentCycle = 1; currentCycle <= settings.DCcycles_; currentCycle++) {
-
-        //discharge
-        AnalogInputs::resetAccumulatedMeasurements();
-        cycleMode='D';
-        status = runCycleDischargeCommon(prog1);
-        if(status != Strategy::COMPLETE) {break;} 
- 
-        //waiting after discharge
-        cycleMode='W';
-        status = runDCRestTime();
-        if(status != Strategy::COMPLETE) { break; }
-
-        //charge
-        Monitor::resetETA();
-        AnalogInputs::resetAccumulatedMeasurements();
-        cycleMode='C';
-
-        //lastcharge? (no need wait at end?)
-        if (currentCycle == settings.DCcycles_) {
+    for(currentCycle = 0; currentCycle < settings.DCcycles*2; currentCycle++) {
+        if (currentCycle == settings.DCcycles*2 - 1) {
             Strategy::exitImmediately = false;
         }
-        status = runCycleChargeCommon(prog1); //independent exit
-        if(status != Strategy::COMPLETE) {break;}
 
-        //waiting after charge
-        cycleMode='W';
-        if (currentCycle != settings.DCcycles_) {
-            status = runDCRestTime();
-            if(status != Strategy::COMPLETE) { break; }
-            else {status = Strategy::COMPLETE;}
-        }
+        Monitor::resetAccumulatedMeasurements();
+        AnalogInputs::resetAccumulatedMeasurements();
+
+        status = Program::runWithoutInfo(currentCycle & 1 ? Program::Charge : Program::Discharge);
+        if(status != Strategy::COMPLETE || (!Strategy::exitImmediately)) break;
+ 
+        status = runDCRestTime();
+        if(status != Strategy::COMPLETE) break;
     }
     return status;
 }
 
-Strategy::statusType ProgramDCcycle::runCycleDischargeCommon(BatteryGroup prog1)
-{
-    Strategy::statusType status = Strategy::COMPLETE;
-
-    if(prog1 == LiXX){
-        status = runDischarge();
-    }
-    if(prog1 == NiXX) {
-        status = runNiXXDischarge();
-    }
-    if(prog1 == Pb) {
-        status = runDischarge();
-    }
-
-    return status;
-}
-
-Strategy::statusType ProgramDCcycle::runCycleChargeCommon(BatteryGroup prog1)
-{
-    Strategy::statusType status = Strategy::COMPLETE;
-
-    if(prog1 == LiXX) {
-	//   status = runTheveninChargeBalance();
-		if (settings.forceBalancePort_) status =  runTheveninChargeBalance();		//ign
-		else status =  runTheveninCharge(settings.Lixx_Imin_);		//ign
-    }
-    if(prog1 == NiXX) {
-        status = runDeltaCharge();
-    }
-    if(prog1 == Pb) {
-        status =  runTheveninCharge(settings.Lixx_Imin_);
-    }
-
-    return status;
-}

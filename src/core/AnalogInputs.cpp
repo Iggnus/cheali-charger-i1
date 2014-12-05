@@ -23,6 +23,7 @@
 #include "SerialLog.h"
 #include "eeprom.h"
 #include "atomic.h"
+#include "Balancer.h"
 
 #ifndef ANALOG_INPUTS_ADC_BURST_COUNT
 #define ANALOG_INPUTS_ADC_BURST_COUNT           1
@@ -82,6 +83,7 @@ namespace AnalogInputs {
     uint16_t    deltaStartTimeU16_;
 
     uint32_t    i_charge_;
+    uint32_t    Eout_;
 
     void _resetAvr();
     void _resetDeltaAvr();
@@ -123,7 +125,7 @@ void AnalogInputs::doFullMeasurement()
 void AnalogInputs::restoreDefault()
 {
     CalibrationPoint p;
-    FOR_ALL_PHY_INPUTS(name) {
+    ANALOG_INPUTS_FOR_ALL_PHY(name) {
         p = pgm::read<CalibrationPoint>(&inputsP_[name].p0);
         setCalibrationPoint(name, 0, p);
         p = pgm::read<CalibrationPoint>(&inputsP_[name].p1);
@@ -134,7 +136,7 @@ void AnalogInputs::restoreDefault()
 
 void AnalogInputs::getCalibrationPoint(CalibrationPoint &x, Name name, uint8_t i)
 {
-    if(name >= PHYSICAL_INPUTS || i >= MAX_CALIBRATION_POINTS) {
+    if(name >= PHYSICAL_INPUTS || i >= ANALOG_INPUTS_MAX_CALIBRATION_POINTS) {
         x.x = x.y = 1;
         return;
     }
@@ -142,7 +144,7 @@ void AnalogInputs::getCalibrationPoint(CalibrationPoint &x, Name name, uint8_t i
 }
 void AnalogInputs::setCalibrationPoint(Name name, uint8_t i, const CalibrationPoint &x)
 {
-    if(name >= PHYSICAL_INPUTS || i >= MAX_CALIBRATION_POINTS) return;
+    if(name >= PHYSICAL_INPUTS || i >= ANALOG_INPUTS_MAX_CALIBRATION_POINTS) return;
     eeprom::write<CalibrationPoint>(&eeprom::data.calibration[name].p[i], x);
 }
 
@@ -169,6 +171,12 @@ bool AnalogInputs::isConnected(Name name)
     }
 }
 
+bool AnalogInputs::isBalancePortConnected()
+{
+    return isConnected(Vbalancer);
+}
+
+
 AnalogInputs::ValueType AnalogInputs::getVout()
 {
     return getRealValue(VoutBalancer);
@@ -187,7 +195,7 @@ bool AnalogInputs::isOutStable()
 void AnalogInputs::_resetAvr()
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        FOR_ALL_PHY_INPUTS(name) {
+        ANALOG_INPUTS_FOR_ALL_PHY(name) {
             i_avrSum_[name] = 0;
         }
         i_avrCount_ = ANALOG_INPUTS_ADC_ROUND_MAX_COUNT;
@@ -215,7 +223,7 @@ void AnalogInputs::resetDelta()
 
 void AnalogInputs::resetStable()
 {
-    FOR_ALL_INPUTS(name) {
+    ANALOG_INPUTS_FOR_ALL(name) {
         stableCount_[name] = 0;
     }
 }
@@ -230,15 +238,23 @@ void AnalogInputs::resetMeasurement()
     }
 }
 
-void AnalogInputs::reset()
+void AnalogInputs::resetAccumulatedMeasurements()
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         i_charge_ = 0;
+		Eout_ = 0;
     }
-    calculationCount_ = 0;
     resetMeasurement();
     resetDelta();
-    FOR_ALL_INPUTS(name){
+    setReal(deltaVoutMax, 0);
+}
+
+
+void AnalogInputs::reset()
+{
+    calculationCount_ = 0;
+    resetAccumulatedMeasurements();
+    ANALOG_INPUTS_FOR_ALL(name){
         real_[name] = 0;
     }
 }
@@ -272,7 +288,7 @@ bool AnalogInputs::isReversePolarity()
 AnalogInputs::ValueType AnalogInputs::calibrateValue(Name name, ValueType x)
 {
     //TODO: do this with more points
-    if (x==0) return 0;
+    if (x == 0) return 0;
     CalibrationPoint p0, p1;
     getCalibrationPoint(p0, name, 0);
     getCalibrationPoint(p1, name, 1);
@@ -290,7 +306,7 @@ AnalogInputs::ValueType AnalogInputs::calibrateValue(Name name, ValueType x)
 
 AnalogInputs::ValueType AnalogInputs::reverseCalibrateValue(Name name, ValueType y)
 {
-    if (y==0) return 0;
+    if (y == 0) return 0;
     //TODO: do this with more points
     CalibrationPoint p0, p1;
     getCalibrationPoint(p0, name, 0);
@@ -318,13 +334,11 @@ void AnalogInputs::initialize()
 AnalogInputs::Type AnalogInputs::getType(Name name)
 {
     switch(name){
-    case VirtualInputs:
-        return Unknown;
     case Iout:
     case Ismps:
-    case IsmpsValue:
+    case IsmpsSet:
     case Idischarge:
-    case IdischargeValue:
+    case IdischargeSet:
         return Current;
     case Tintern:
     case Textern:
@@ -364,7 +378,21 @@ uint16_t AnalogInputs::getCharge()
 
 void AnalogInputs::doSlowInterrupt()
 {
-    if(on_) i_charge_ += getIout();
+	static uint8_t etime;
+	if(on_) {
+		i_charge_ += getIout();
+		if(etime++ > 87) {				//ign  Ones per 10.015 sec
+			uint32_t E = getIout();
+			E *= getVout();
+			E /= 100;
+			Eout_ += E;
+			setReal(Eout, Eout_/36000);
+
+//			SerialLog::printString("AI::doSlowInterrupt"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
+//			SerialLog::printNL();  //ign
+			etime = 0;
+		}
+	}
 }
 
 // finalize Measurement
@@ -400,7 +428,7 @@ void AnalogInputs::finalizeFullMeasurement()
 		    i_deltaAvrCount_ ++;
 		    finalizeDeltaMeasurement();
 
-			FOR_ALL_PHY_INPUTS(name) {
+			ANALOG_INPUTS_FOR_ALL_PHY(name) {
 				avrAdc_[name] = i_avrSum_[name] / ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT;
 				ValueType real = calibrateValue(name, avrAdc_[name]);
 				setReal(name, real);
@@ -414,7 +442,7 @@ void AnalogInputs::finalizeFullMeasurement()
 
 void AnalogInputs::finalizeDeltaMeasurement()
 {
-    if(Time::diffU16(deltaStartTimeU16_, Time::getMilisecondsU16()) > DELTA_TIME_MILISECONDS) {
+    if(Time::diffU16(deltaStartTimeU16_, Time::getMilisecondsU16()) > ANALOG_INPUTS_DELTA_TIME_MILISECONDS) {
         uint32_t deltaAvrCount;
         uint32_t deltaAvrSumVoutPlus;
         uint32_t deltaAvrSumVoutMinus;
@@ -450,8 +478,8 @@ void AnalogInputs::finalizeDeltaMeasurement()
 
         //calculate deltaTextern
         uint16_t dc = 2;
-#if DELTA_TIME_MILISECONDS != 30000
-#error "DELTA_TIME_MILISECONDS != 30000"
+#if ANALOG_INPUTS_DELTA_TIME_MILISECONDS != 30000
+#error "ANALOG_INPUTS_DELTA_TIME_MILISECONDS != 30000"
 #endif
         deltaAvrSumTextern /= deltaAvrCount;
         x = deltaAvrSumTextern;
@@ -467,7 +495,6 @@ void AnalogInputs::finalizeDeltaMeasurement()
 
 void AnalogInputs::finalizeFullVirtualMeasurement()
 {
-    AnalogInputs::ValueType oneVolt = ANALOG_VOLT(1);
     AnalogInputs::ValueType balancer = 0;
     AnalogInputs::ValueType out_p = real_[Vout_plus_pin];
     AnalogInputs::ValueType out_m = real_[Vout_minus_pin];
@@ -502,7 +529,7 @@ void AnalogInputs::finalizeFullVirtualMeasurement()
 
     setReal(Vbalancer, balancer);
     AnalogInputs::Name obInfo;
-    if(balancer == 0 || absDiff(out, balancer) > oneVolt) {
+    if(balancer == 0 || absDiff(out, balancer) > ANALOG_VOLT(3.000)) {
         //balancer not connected or big error in calibration
         obInfo = Vout;
         ports = 0;
@@ -531,10 +558,13 @@ void AnalogInputs::finalizeFullVirtualMeasurement()
     setReal(Pout, P);
 
     //TODO: rewrite
-    uint32_t E = CoutValue;
-    E *= out;
-    E /= 10000;
-    setReal(Eout, E);
+//    uint32_t E = CoutValue;
+//    E *= out;
+//    E /= 10000;
+//    setReal(Eout, E);
+
+//SerialLog::printString("setReal"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
+//SerialLog::printNL();  //ign
 }
 
 void AnalogInputs::setReal(Name name, ValueType real)
@@ -545,11 +575,5 @@ void AnalogInputs::setReal(Name name, ValueType real)
         stableCount_[name]++;
 
     real_[name] = real;
-}
-
-void AnalogInputs::resetAccumulatedMeasurements()
-{
-    i_charge_ = 0;
-    resetMeasurement();
 }
 

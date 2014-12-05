@@ -68,6 +68,10 @@ namespace adc {
 static uint8_t input_;
 volatile uint8_t g_addSumToInput = 0;
 
+void reset() {
+    input_ = 0;
+}
+
 void initialize()
 {
     IO::digitalWrite(MUX0_Z_D_PIN, 0);
@@ -171,26 +175,22 @@ void processConversion(uint8_t input)
     low  = ADCL;
     high = ADCH;
 
+    AnalogInputs::Name name = getAIName(input_);
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         uint16_t v = (high << 8) | low;
-        AnalogInputs::i_adc_[getAIName(input)] = v;
+        AnalogInputs::i_adc_[name] = v;
         if(g_addSumToInput)
-            AnalogInputs::i_avrSum_[getAIName(input)] += v;
+            AnalogInputs::i_avrSum_[name] += v;
     }
 }
 
-void reset() {
-    input_ = 0;
-}
-
-
 void finalizeMeasurement()
 {
-    AnalogInputs::i_adc_[AnalogInputs::IsmpsValue]        = SMPS::getValue();
-    AnalogInputs::i_adc_[AnalogInputs::IdischargeValue]   = Discharger::getValue();
+    AnalogInputs::i_adc_[AnalogInputs::IsmpsSet]        = SMPS::getValue();
+    AnalogInputs::i_adc_[AnalogInputs::IdischargeSet]   = Discharger::getValue();
     if(g_addSumToInput) {
-        AnalogInputs::i_avrSum_[AnalogInputs::IsmpsValue]        += SMPS::getValue();
-        AnalogInputs::i_avrSum_[AnalogInputs::IdischargeValue]   += Discharger::getValue();
+        AnalogInputs::i_avrSum_[AnalogInputs::IsmpsSet]        += SMPS::getValue();
+        AnalogInputs::i_avrSum_[AnalogInputs::IdischargeSet]   += Discharger::getValue();
         if(AnalogInputs::i_avrCount_ == 1) {
             AnalogInputs::i_avrSum_[AnalogInputs::Ismps]          /= ADC_I_SMPS_PER_ROUND;
         }
@@ -204,7 +204,7 @@ void setNextMuxAddress()
     uint8_t input = nextInput(input_);
     int8_t mux = getMUX(input);
     //TODO: disable temperature
-    if(settings.UART_ != Settings::Disabled && mux == MADDR_T_EXTERN)
+    if(settings.UART != Settings::Disabled && mux == MADDR_T_EXTERN)
         mux = MADDR_V_BALANSER6;
 
     setMuxAddress(mux);

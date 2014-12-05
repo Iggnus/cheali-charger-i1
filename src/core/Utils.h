@@ -40,7 +40,8 @@
 #define CHEALI_CHARGER_STRING2(x)   #x
 #define CHEALI_CHARGER_STRING(x)    CHEALI_CHARGER_STRING2(x)
 
-
+typedef void(*VoidMethod)();
+void callVoidMethod_P(const VoidMethod * method);
 
 bool testTintern(bool &more, AnalogInputs::ValueType off, AnalogInputs::ValueType on);
 uint16_t pow10(uint8_t n);
@@ -57,8 +58,9 @@ uint8_t waitButtonPressed();
 #ifdef FREEZE_COMPLETED
 bool waitButtonPressedLimTime();
 #endif
-uint8_t countElements(const char * const* staticMenu);
-
+uint8_t countElements(const void * const array[]);
+template<typename T>
+uint8_t countElements(const T array[]) {return countElements((const void * const *)array); }
 
 // Platform specific delays. Implemented in Utils.cpp located in platform folder
 namespace Utils
@@ -69,3 +71,4 @@ namespace Utils
 }
 
 #endif /* UTILS_H_ */
+

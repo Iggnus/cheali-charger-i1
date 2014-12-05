@@ -26,6 +26,7 @@
 #include "TheveninDischargeStrategy.h"
 #include "DeltaChargeStrategy.h"
 #include "StorageStrategy.h"
+#include "Balancer.h"
 #include "Monitor.h"
 #include "memory.h"
 #include "StartInfoStrategy.h"
@@ -37,217 +38,102 @@
 
 #include "ProgramDCcycle.h"
 
-Program::ProgramType Program::programType_;
-Program::ProgramState Program::programState_ = Program::Done;
-const char * Program::stopReason_;
-
 namespace Program {
-    //TODO: separate Screens from Programs
-    const Screen::ScreenType deltaChargeScreens[] PROGMEM = {
-      Screen::ScreenFirst,
-      Screen::ScreenEnergy,
-      Screen::ScreenDeltaFirst,
-      Screen::ScreenDeltaVout,
-      Screen::ScreenDeltaTextern,
-      Screen::ScreenR,
-      Screen::ScreenVout,
-      Screen::ScreenVinput,
-      Screen::ScreenTime,
-      Screen::ScreenTemperature,
-      Screen::ScreenCycles,
-      Screen::ScreenCIVlimits,
-      Screen::ScreenEnd
-    };
+    ProgramType programType_;
+    ProgramState programState_ = Program::Done;
+    const char * stopReason_;
 
-    const Screen::ScreenType NiXXDischargeScreens[] PROGMEM = {
-      Screen::ScreenFirst,
-      Screen::ScreenEnergy,
-      Screen::ScreenDeltaTextern,
-      Screen::ScreenR,
-      Screen::ScreenVout,
-      Screen::ScreenVinput,
-      Screen::ScreenTime,
-      Screen::ScreenTemperature,
-      Screen::ScreenCycles,
-      Screen::ScreenCIVlimits,
-      Screen::ScreenEnd
-    };
+    bool startInfo();
 
-    const Screen::ScreenType theveninScreens[] PROGMEM = {
-      Screen::ScreenFirst,
+    void setupStorage();
+    void setupTheveninCharge();
+    void setupDischarge();
+    void setupBalance();
+    void setupDeltaCharge();
 
-      Screen::ScreenEnergy,
-      Screen::ScreenBalancer1_3,            Screen::ScreenBalancer4_6,      BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9,)
-      Screen::ScreenBalancer1_3Rth,         Screen::ScreenBalancer4_6Rth,   BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9Rth,)
-      Screen::ScreenR,
-      Screen::ScreenVout,
-      Screen::ScreenVinput,
-      Screen::ScreenTime,
-      Screen::ScreenTemperature,
-      Screen::ScreenCycles,
-      Screen::ScreenCIVlimits,
-      Screen::ScreenEnd
-
-    };
-
-    const Screen::ScreenType balanceScreens[] PROGMEM = {
-      Screen::ScreenBalancer1_3,            Screen::ScreenBalancer4_6,      BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9,)
-      Screen::ScreenTime,
-      Screen::ScreenVinput,
-      Screen::ScreenTemperature,
-      Screen::ScreenEnd
-    };
-
-    const Screen::ScreenType dischargeScreens[] PROGMEM = {
-      Screen::ScreenFirst,
-      Screen::ScreenEnergy,
-      Screen::ScreenBalancer1_3,            Screen::ScreenBalancer4_6,      BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9,)
-      Screen::ScreenBalancer1_3Rth,         Screen::ScreenBalancer4_6Rth,   BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9Rth,)
-      Screen::ScreenR,
-      Screen::ScreenVout,
-      Screen::ScreenVinput,
-      Screen::ScreenTime,
-      Screen::ScreenTemperature,
-      Screen::ScreenCycles,
-      Screen::ScreenCIVlimits,
-      Screen::ScreenEnd
-    };
-
-    const Screen::ScreenType storageScreens[] PROGMEM = {
-      Screen::ScreenFirst,
-      Screen::ScreenEnergy,
-      Screen::ScreenBalancer1_3,            Screen::ScreenBalancer4_6,      BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9,)
-      Screen::ScreenBalancer1_3Rth,         Screen::ScreenBalancer4_6Rth,   BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9Rth,)
-      Screen::ScreenR,
-      Screen::ScreenVout,
-      Screen::ScreenVinput,
-      Screen::ScreenTime,
-      Screen::ScreenTemperature,
-      Screen::ScreenEnd
-
-    };
-
-    const Screen::ScreenType startInfoBalanceScreens[] PROGMEM = {
-      Screen::ScreenStartInfo,
-      Screen::ScreenBalancer1_3,            Screen::ScreenBalancer4_6,      BALANCER_PORTS_GT_6(Screen::ScreenBalancer7_9,)
-      Screen::ScreenVinput,
-      Screen::ScreenTemperature,
-      Screen::ScreenEnd
-    };
-
-    const Screen::ScreenType startInfoScreens[] PROGMEM = {
-      Screen::ScreenStartInfo,
-      Screen::ScreenVinput,
-      Screen::ScreenTemperature,
-      Screen::ScreenEnd
-    };
-}
+} //namespace Program
 
 bool Program::startInfo()
 {
-    bool balancer = false;
+    Screen::powerOn();
     Strategy::strategy = &StartInfoStrategy::vtable;
     Strategy::exitImmediately = true;
+    Strategy::doBalance = false;
     if(ProgramData::currentProgramData.isLiXX()) {
         //usues balance port
-        balancer = true;
+        Strategy::doBalance = true;
     }
-    StartInfoStrategy::setBalancePort(balancer);
-    return Strategy::doStrategy(startInfoBalanceScreens) == Strategy::COMPLETE;
+    return Strategy::doStrategy() == Strategy::COMPLETE;
 }
 
-Strategy::statusType Program::runStorage(bool balance)
+void Program::setupStorage()
 {
-    StorageStrategy::setDoBalance(balance);
-    StorageStrategy::setVII(ProgramData::currentProgramData.getVoltage(ProgramData::VStorage),
-            ProgramData::currentProgramData.battery.Ic, ProgramData::currentProgramData.battery.Id);
     Strategy::strategy = &StorageStrategy::vtable;
-    return Strategy::doStrategy(storageScreens);
 }
-Strategy::statusType Program::runTheveninCharge(int minChargeC)
+void Program::setupTheveninCharge()
 {
-    TheveninChargeStrategy::setVIB(ProgramData::currentProgramData.getVoltage(ProgramData::VCharge),
-            ProgramData::currentProgramData.battery.Ic, false);
-    //TheveninChargeStrategy::setMinI(ProgramData::currentProgramData.battery.Ic/minChargeC);		//ignt проверить ток оконч зарядки
+    Strategy::setVI(ProgramData::VCharge, true);
     Strategy::strategy = &TheveninChargeStrategy::vtable;
-    return Strategy::doStrategy(theveninScreens);
 }
 
-Strategy::statusType Program::runTheveninChargeBalance()
-{
-    TheveninChargeStrategy::setVIB(ProgramData::currentProgramData.getVoltage(ProgramData::VCharge),
-            ProgramData::currentProgramData.battery.Ic, true);
-    Strategy::strategy = &TheveninChargeStrategy::vtable;
-    return Strategy::doStrategy(theveninScreens);
-}
-
-
-Strategy::statusType Program::runDeltaCharge()
+void Program::setupDeltaCharge()
 {
     Strategy::strategy = &DeltaChargeStrategy::vtable;
-    return Strategy::doStrategy(deltaChargeScreens);
 }
 
-Strategy::statusType Program::runDischarge()
+void Program::setupDischarge()
 {
-    AnalogInputs::ValueType Voff = ProgramData::currentProgramData.getVoltage(ProgramData::VDischarge);
-    Voff += settings.dischargeOffset_LiXX_ * ProgramData::currentProgramData.battery.cells;
-    TheveninDischargeStrategy::setVI(Voff, ProgramData::currentProgramData.battery.Id);
+    Strategy::setVI(ProgramData::VDischarge, false);
     Strategy::strategy = &TheveninDischargeStrategy::vtable;
-    return Strategy::doStrategy(dischargeScreens);
 }
 
-Strategy::statusType Program::runNiXXDischarge()
-{
-    TheveninDischargeStrategy::setVI(ProgramData::currentProgramData.getVoltage(ProgramData::VDischarge), ProgramData::currentProgramData.battery.Id);
-    Strategy::strategy = &TheveninDischargeStrategy::vtable;
-    return Strategy::doStrategy(NiXXDischargeScreens);
-}
-
-Strategy::statusType Program::runBalance()
+void Program::setupBalance()
 {
     Strategy::strategy = &Balancer::vtable;
-    return Strategy::doStrategy(balanceScreens);
 }
 
-Program::ProgramState getProgramState(Program::ProgramType prog)
+Strategy::statusType Program::runWithoutInfo(ProgramType prog)
 {
-    Program::ProgramState retu;
+    Strategy::minIdiv = settings.minIoutDiv;
+    Strategy::doBalance = false;
+
     switch(prog) {
-    case Program::ChargeLiXX:
-    case Program::ChargePb:
-    case Program::FastChargePb:
-    case Program::FastChargeLiXX:
-    case Program::ChargeNiXX:
-        retu = Program::Charging;
+    case Program::Charge:
+        if(ProgramData::currentProgramData.isNiXX()) {
+            setupDeltaCharge();
+        } else {
+            setupTheveninCharge();
+        }
+        break;
+    case Program::ChargeBalance:
+        Strategy::doBalance = true;
+        setupTheveninCharge();
         break;
     case Program::Balance:
-        retu = Program::Balancing;
+        setupBalance();
         break;
-    case Program::DischargeLiXX:
-    case Program::DischargePb:
-    case Program::DischargeNiXX:
-        retu = Program::Discharging;
+    case Program::Discharge:
+        setupDischarge();
         break;
-    case Program::DCcycleLiXX:
-    case Program::DCcyclePb:
-         retu = Program::DischargingCharging;
+    case Program::FastCharge:
+        Strategy::minIdiv = 5;
+        setupTheveninCharge();
         break;
-    case Program::DCcycleNiXX:
-         retu = Program::DischargingCharging;
-        break; 
-    case Program::StorageLiXX:
-    case Program::StorageLiXX_Balance:
-        retu = Program::Storage;
+    case Program::Storage:
+        setupStorage();
         break;
-    case Program::ChargeLiXX_Balance:
-        retu = Program::ChargingBalancing;
+    case Program::StorageBalance:
+        Strategy::doBalance = true;
+        setupStorage();
         break;
+    case Program::DischargeChargeCycle:
+        return ProgramDCcycle::runDCcycle();
     default:
-        retu = Program::None;
-        break;
+        //TODO:
+        Screen::runNotImplemented();
+        return Strategy::ERROR;
     }
-    return retu;
+    return Strategy::doStrategy();
 }
 
 void Program::run(ProgramType prog)
@@ -255,74 +141,24 @@ void Program::run(ProgramType prog)
     programType_ = prog;
     stopReason_ = NULL;
 
-    programState_ = getProgramState(prog);
+    programState_ = Info;
     SerialLog::powerOn();
     AnalogInputs::powerOn(true);
 
-
     if(startInfo()) {
+        programState_ = InProgress;
+
         Monitor::powerOn();
+        Screen::powerOn();
+
         Strategy::exitImmediately = false;
         Buzzer::soundStartProgram();
 
-        switch(prog) {
-        case Program::ChargeLiXX:
-        case Program::ChargePb:
-            runTheveninCharge(settings.Lixx_Imin_);   //(default end current = start current / 10)
-            break;
-        case Program::Balance:
-            runBalance();
-            break;
-        case Program::DischargeLiXX:
-        case Program::DischargePb:
-            runDischarge();
-            break;
-        case Program::FastChargeLiXX:
-        case Program::FastChargePb:
-            runTheveninCharge(5);
-            break;
-        case Program::StorageLiXX:
-            runStorage(false);
-            break;
-        case Program::StorageLiXX_Balance:
-            runStorage(true);
-            break;
-        case Program::ChargeNiXX:
-            runDeltaCharge();
-            break;
-        case Program::DischargeNiXX:
-            runNiXXDischarge();
-            break;
-        case Program::DCcycleLiXX:
-//            if (settings.forceBalancePort_) {
-                ProgramDCcycle::runDCcycle(ProgramDCcycle::LiXX);
-//            } else {
-//                Screen::runNeedForceBalance();
-//            }
-            break;
-        case Program::DCcycleNiXX:
-            ProgramDCcycle::runDCcycle(ProgramDCcycle::NiXX);
-            break;
-        case Program::DCcyclePb:
-            ProgramDCcycle::runDCcycle(ProgramDCcycle::Pb);
-            break;
-        case Program::ChargeLiXX_Balance:
-            runTheveninChargeBalance();
-            break;
-        default:
-            //TODO:
-            Screen::runNotImplemented();
-            break;
-        }
+        runWithoutInfo(programType_);
+
         Monitor::powerOff();
     }
     AnalogInputs::powerOff();
     SerialLog::powerOff();
-}
-
-Strategy::statusType Program::runDCRestTime()
-{
-    DelayStrategy::setDelay(settings.DCRestTime_-1);		//ign0
-    Strategy::strategy = &DelayStrategy::vtable;
-    return Strategy::doStrategy(Program::dischargeScreens);
+    Screen::powerOff();
 }

@@ -20,10 +20,9 @@ changes
 + minimal adjustable current - 2x minIout
 + batteries can be charged from 0 voltage
 + long press Stop key for stop - prevents accidental stop with loosing data
-
 * changed routine for energy calculation
-* improoved Time::diffU16() routine
-* improoved delay accuracy  (DelayStrategy switched to seconds)
+* improved Time::diffU16() routine
+* improved delay accuracy  (DelayStrategy switched to seconds)
 
 
 Now it is possible to change main parameters while charging discharging and cycling.

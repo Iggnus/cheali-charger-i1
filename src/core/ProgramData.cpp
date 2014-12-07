@@ -256,10 +256,14 @@ void ProgramData::changeCharge(int direction)
 uint16_t ProgramData::getMaxIc() const
 {
     uint32_t i;
-    uint16_t v;
+    int16_t v;
     v = getVoltage(VDischarge);
     i = MAX_CHARGE_P;
     i *= ANALOG_VOLT(1);
+#ifdef DYNAMIC_MAX_POWER	
+	v -= ANALOG_VOLT(8);
+	if(v < 1) v = 1;
+#endif
     i /= v;
 
     if(i > MAX_CHARGE_I)

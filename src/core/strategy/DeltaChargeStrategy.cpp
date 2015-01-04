@@ -41,14 +41,22 @@ void DeltaChargeStrategy::powerOn()
 Strategy::statusType DeltaChargeStrategy::doStrategy()
 {
     SimpleChargeStrategy::calculateThevenin();
-    AnalogInputs::ValueType Vout = AnalogInputs::getVout();
+    AnalogInputs::ValueType Vout = AnalogInputs::getVbattery();
+
+#ifdef ENABLE_R_WIRE
+    //TODO: maybe we should include wire voltage drop in AnalogInputs::getVbattery()
+    uint32_t Vwire = AnalogInputs::getIout();
+    Vwire *= settings.Rwire;
+    Vwire /= ANALOG_AMP(1.0);
+    Vout -= Vwire;
+#endif
 
     if(ProgramData::currentProgramData.getVoltage(ProgramData::VDischarge) < Vout) {
-        SMPS::trySetIout(ProgramData::currentProgramData.battery.Ic);
+        SMPS::trySetIout(Strategy::maxI);
     }
 
-    if(AnalogInputs::isOutStable() && Vout > ProgramData::currentProgramData.getVoltage(ProgramData::VUpperLimit)) {
-        Program::stopReason_ = string_batteryVoltageReachedUpperLimit;
+    if(AnalogInputs::isOutStable() && Vout > Strategy::endV) {
+        Program::stopReason = string_batteryVoltageReachedUpperLimit;
         return Strategy::COMPLETE;
     }
 
@@ -58,14 +66,14 @@ Strategy::statusType DeltaChargeStrategy::doStrategy()
     if(settings.enable_deltaV) {
         int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaVout);
         if(x < ProgramData::currentProgramData.getDeltaVLimit()) {
-            Program::stopReason_ = string_batteryVoltageReachedDeltaVLimit;
+            Program::stopReason = string_batteryVoltageReachedDeltaVLimit;
             return Strategy::COMPLETE;
         }
     }
     if(settings.externT) {
-    	int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaTextern);
+        int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaTextern);
         if(x > ProgramData::currentProgramData.getDeltaTLimit()) {
-            Program::stopReason_ = string_externalTemperatureReachedDeltaTLimit;
+            Program::stopReason = string_externalTemperatureReachedDeltaTLimit;
             return Strategy::COMPLETE;
         }
     }

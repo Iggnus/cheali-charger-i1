@@ -22,7 +22,6 @@
 #include "memory.h"
 #include "Settings.h"
 
-
 namespace StartInfoStrategy {
     uint8_t ok_;
 

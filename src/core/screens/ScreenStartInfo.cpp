@@ -36,7 +36,7 @@ namespace Screen {
 namespace StartInfo {
 
     const char programString[] PROGMEM = "ChCBBlDiFCStSBCY";
-    
+
     void printProgram2chars(Program::ProgramType prog)
     {
         STATIC_ASSERT(sizeOfArray(programString)-1 == Program::EditBattery*2);
@@ -44,7 +44,7 @@ namespace StartInfo {
             lcdPrintChar(pgm::read(&programString[prog*2+i]));
         }
     }
-   
+
 } // namespace Screen
 } // namespace StartInfo
 
@@ -60,17 +60,17 @@ void Screen::StartInfo::displayStartInfo()
 	}
 
     ProgramData::currentProgramData.printBatteryString();
-    lcdPrintChar(' ');
+    lcdPrintSpace1();
 	if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
 		lcdPrintSpaces(9);
 	}
 	else
 	{
 		ProgramData::currentProgramData.printVoltageString();
-		lcdPrintChar(' ');
+    	lcdPrintSpace1();
 	}
 
-    printProgram2chars(Program::programType_);
+    printProgram2chars(Program::programType);
 
     lcdSetCursor0_1();
     lcdPrintUnsigned(Monitor::getChargeProcent(), 2);
@@ -87,7 +87,7 @@ void Screen::StartInfo::displayStartInfo()
         else lcdPrintSpaces(5);
 
         if(bindex & 4) lcdPrintDigit(AnalogInputs::getConnectedBalancePorts());
-        else lcdPrintChar(' ');
+        else lcdPrintSpace1();
     } else {
 
         lcdPrintCharge(ProgramData::currentProgramData.battery.C, 6);

@@ -25,16 +25,6 @@
 #include "atomic.h"
 #include "Balancer.h"
 
-#ifndef ANALOG_INPUTS_ADC_BURST_COUNT
-#define ANALOG_INPUTS_ADC_BURST_COUNT           1
-#endif
-#ifndef ANALOG_INPUTS_ADC_ROUND_MAX_COUNT
-#define ANALOG_INPUTS_ADC_ROUND_MAX_COUNT       100
-#endif
-#ifndef ANALOG_INPUTS_ADC_DELTA_SHIFT
-#define ANALOG_INPUTS_ADC_DELTA_SHIFT           0
-#endif
-
 
 #define ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT (ANALOG_INPUTS_ADC_ROUND_MAX_COUNT*ANALOG_INPUTS_ADC_BURST_COUNT)
 
@@ -157,9 +147,9 @@ uint8_t AnalogInputs::getConnectedBalancePorts()
 }
 bool AnalogInputs::isConnected(Name name)
 {
-	if(name == Vbalancer) {
-		return getRealValue(VobInfo) == Vbalancer;
-	}
+    if(name == Vbalancer) {
+        return getRealValue(VobInfo) == Vbalancer;
+    }
     AnalogInputs::ValueType x = getRealValue(name);
     switch(getType(name)) {
     case Current:
@@ -177,9 +167,14 @@ bool AnalogInputs::isBalancePortConnected()
 }
 
 
-AnalogInputs::ValueType AnalogInputs::getVout()
+AnalogInputs::ValueType AnalogInputs::getVbattery()
 {
     return getRealValue(VoutBalancer);
+}
+
+AnalogInputs::ValueType AnalogInputs::getVout()
+{
+    return getRealValue(Vout);
 }
 
 AnalogInputs::ValueType AnalogInputs::getIout()
@@ -232,8 +227,8 @@ void AnalogInputs::resetStable()
 void AnalogInputs::resetMeasurement()
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-    	i_avrCount_ = 1; //TODO:??
-    	ignoreLastResult_ = true;
+        i_avrCount_ = 1; //TODO:??
+        ignoreLastResult_ = true;
         resetStable();
     }
 }
@@ -246,7 +241,10 @@ void AnalogInputs::resetAccumulatedMeasurements()
     }
     resetMeasurement();
     resetDelta();
+    setReal(Cout, 0);
+    setReal(deltaVout, 0);
     setReal(deltaVoutMax, 0);
+    setReal(deltaTextern, 0);
 }
 
 
@@ -400,15 +398,15 @@ void AnalogInputs::doSlowInterrupt()
 void AnalogInputs::intterruptFinalizeMeasurement()
 {
     if(i_avrCount_>0)
-    	i_avrCount_--;
+        i_avrCount_--;
 }
 
 
 void AnalogInputs::doIdle()
 {
-	if(isPowerOn()) {
-		finalizeFullMeasurement();
-	}
+    if(isPowerOn()) {
+        finalizeFullMeasurement();
+    }
 }
 
 void AnalogInputs::finalizeFullMeasurement()
@@ -419,22 +417,22 @@ void AnalogInputs::finalizeFullMeasurement()
     }
 
     if(avrCount == 0) {
-    	if(!ignoreLastResult_) {
-			calculationCount_++;
+        if(!ignoreLastResult_) {
+            calculationCount_++;
 
-		    i_deltaAvrSumVoutPlus_    += i_avrSum_[Vout_plus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
-		    i_deltaAvrSumVoutMinus_   += i_avrSum_[Vout_minus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
-		    i_deltaAvrSumTextern_     += i_avrSum_[Textern] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
-		    i_deltaAvrCount_ ++;
-		    finalizeDeltaMeasurement();
+            i_deltaAvrSumVoutPlus_    += i_avrSum_[Vout_plus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
+            i_deltaAvrSumVoutMinus_   += i_avrSum_[Vout_minus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
+            i_deltaAvrSumTextern_     += i_avrSum_[Textern] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
+            i_deltaAvrCount_ ++;
+            finalizeDeltaMeasurement();
 
-			ANALOG_INPUTS_FOR_ALL_PHY(name) {
-				avrAdc_[name] = i_avrSum_[name] / ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT;
-				ValueType real = calibrateValue(name, avrAdc_[name]);
-				setReal(name, real);
-			}
-			finalizeFullVirtualMeasurement();
-    	}
+            ANALOG_INPUTS_FOR_ALL_PHY(name) {
+                avrAdc_[name] = i_avrSum_[name] / ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT;
+                ValueType real = calibrateValue(name, avrAdc_[name]);
+                setReal(name, real);
+            }
+            finalizeFullVirtualMeasurement();
+        }
         _resetAvr();
     }
 }
@@ -448,7 +446,8 @@ void AnalogInputs::finalizeDeltaMeasurement()
         uint32_t deltaAvrSumVoutMinus;
         uint32_t deltaAvrSumTextern;
         ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-            deltaAvrCount = i_deltaAvrCount_*ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT;
+            deltaAvrCount = i_deltaAvrCount_;
+            deltaAvrCount *= ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT;
             deltaAvrCount >>= ANALOG_INPUTS_ADC_DELTA_SHIFT;
             deltaAvrSumVoutPlus  = i_deltaAvrSumVoutPlus_;
             deltaAvrSumVoutMinus = i_deltaAvrSumVoutMinus_;

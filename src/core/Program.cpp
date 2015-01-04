@@ -35,13 +35,13 @@
 #include "Settings.h"
 #include "SerialLog.h"
 #include "DelayStrategy.h"
-
 #include "ProgramDCcycle.h"
+#include "Calibrate.h"
 
 namespace Program {
-    ProgramType programType_;
-    ProgramState programState_ = Program::Done;
-    const char * stopReason_;
+    ProgramType programType;
+    ProgramState programState = Program::Done;
+    const char * stopReason;
 
     bool startInfo();
 
@@ -78,6 +78,7 @@ void Program::setupTheveninCharge()
 
 void Program::setupDeltaCharge()
 {
+    Strategy::setVI(ProgramData::VCharge, true);
     Strategy::strategy = &DeltaChargeStrategy::vtable;
 }
 
@@ -138,15 +139,18 @@ Strategy::statusType Program::runWithoutInfo(ProgramType prog)
 
 void Program::run(ProgramType prog)
 {
-    programType_ = prog;
-    stopReason_ = NULL;
+    if(!Calibrate::check())
+        return;
 
-    programState_ = Info;
+    programType = prog;
+    stopReason = NULL;
+
+    programState = Info;
     SerialLog::powerOn();
     AnalogInputs::powerOn(true);
 
     if(startInfo()) {
-        programState_ = InProgress;
+        programState = InProgress;
 
         Monitor::powerOn();
         Screen::powerOn();
@@ -154,7 +158,7 @@ void Program::run(ProgramType prog)
         Strategy::exitImmediately = false;
         Buzzer::soundStartProgram();
 
-        runWithoutInfo(programType_);
+        runWithoutInfo(programType);
 
         Monitor::powerOff();
     }

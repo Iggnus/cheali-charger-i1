@@ -8,6 +8,8 @@
 
 namespace {
     volatile uint16_t i_PID_setpoint;
+    //we have to use i_PID_CutOffVoltage, on some chargers (M0516) ADC can read up to 60V
+    volatile uint16_t i_PID_CutOffVoltage;
     volatile long i_PID_MV;
     volatile bool i_PID_enable;
 }
@@ -16,11 +18,11 @@ namespace {
 
 uint16_t hardware::getPIDValue()
 {
-	uint16_t v;
+    uint16_t v;
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         v = i_PID_MV>>PID_MV_PRECISION;
     }
-	return v;
+    return v;
 }
 
 
@@ -28,7 +30,7 @@ void SMPS_PID::update()
 {
     if(!i_PID_enable) return;
     //if Vout is too high disable PID
-    if(AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin) >= ANALOG_INPUTS_MAX_ADC_VALUE) {
+    if(AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin) >= i_PID_CutOffVoltage) {
         hardware::setChargerOutput(false);
         i_PID_enable = false;
         return;
@@ -51,7 +53,7 @@ void SMPS_PID::update()
 
 void SMPS_PID::init(uint16_t Vin, uint16_t Vout)
 {
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         i_PID_setpoint = 0;
         if(Vout>Vin) {
             i_PID_MV = OUTPUT_PWM_PRECISION_PERIOD;
@@ -60,7 +62,7 @@ void SMPS_PID::init(uint16_t Vin, uint16_t Vout)
         }
         i_PID_MV <<= PID_MV_PRECISION;
         i_PID_enable = true;
-	}
+    }
 
 }
 
@@ -70,11 +72,11 @@ namespace {
         IO::digitalWrite(SMPS_VALUE_BUCK_PIN, 1);
     }
     void disableChargerBuck() {
-    	outputPWM::disablePWM(SMPS_VALUE_BUCK_PIN);
+        outputPWM::disablePWM(SMPS_VALUE_BUCK_PIN);
         IO::digitalWrite(SMPS_VALUE_BUCK_PIN, 0);
     }
     void disableChargerBoost() {
-    	outputPWM::disablePWM(SMPS_VALUE_BOOST_PIN);
+        outputPWM::disablePWM(SMPS_VALUE_BOOST_PIN);
         IO::digitalWrite(SMPS_VALUE_BOOST_PIN, 0);
     }
 }
@@ -93,6 +95,21 @@ void SMPS_PID::setPID_MV(uint16_t value) {
     }
 }
 
+void hardware::setVoutCutoff(AnalogInputs::ValueType v) {
+    if(v > MAX_CHARGE_V) {
+        v = MAX_CHARGE_V;
+    }
+    AnalogInputs::ValueType cutOff = AnalogInputs::reverseCalibrateValue(AnalogInputs::Vout_plus_pin, v);
+    if(cutOff > ANALOG_INPUTS_MAX_ADC_Vout_plus_pin) {
+        //extra limit if calibration is wrong
+        cutOff = ANALOG_INPUTS_MAX_ADC_Vout_plus_pin;
+    }
+
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        i_PID_CutOffVoltage = cutOff;
+    }
+}
+
 void hardware::setChargerValue(uint16_t value)
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -100,15 +117,15 @@ void hardware::setChargerValue(uint16_t value)
     }
 
 //  TODO: test without PID
-//	SMPS_PID::setPID_MV(value);
-//	outputPWM::setPWM(SMPS_VALUE_BUCK_PIN, value);
+//  SMPS_PID::setPID_MV(value);
+//  outputPWM::setPWM(SMPS_VALUE_BUCK_PIN, value);
 }
 
 void hardware::setChargerOutput(bool enable)
 {
     if(enable) setDischargerOutput(false);
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-    	i_PID_enable = false;
+        i_PID_enable = false;
         disableChargerBuck();
         disableChargerBoost();
     }

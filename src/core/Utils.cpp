@@ -68,6 +68,11 @@ int8_t sign(int16_t x)
     return -1;
 }
 
+uint8_t digits(uint16_t x)
+{
+    return digits((uint32_t)x);
+}
+
 uint8_t digits(uint32_t x)
 {
     uint8_t retu = 0;
@@ -78,48 +83,48 @@ uint8_t digits(uint32_t x)
     return retu;
 }
 
-void change0ToMax(uint16_t &v, int dir, uint8_t max)
+void change0ToMax(uint16_t *v, int dir, uint8_t max)
 {
-    if( ((int)v) + dir< 0) v = 0;
-    else if(((int)v)+dir > max) v = max;
-    else v+=dir;
+    if( ((int)*v) + dir< 0) *v = 0;
+    else if(((int)*v)+dir > max) *v = max;
+    else *v+=dir;
 }
 
-void change1ToMax(uint16_t &v, int dir, uint8_t max)
+void change1ToMax(uint16_t *v, int dir, uint8_t max)
 {
-    if( ((int)v) + dir< 1) v = 1;
-    else if(((int)v)+dir > max) v = max;
-    else v+=dir;
+    if( ((int)*v) + dir< 1) *v = 1;
+    else if(((int)*v)+dir > max) *v = max;
+    else *v+=dir;
 }
 
-void change0ToMaxSmart(uint16_t &v, int dir, uint16_t max)
+void change0ToMaxSmart(uint16_t *v, int dir, uint16_t max)
 {
     return change0ToMaxSmart(v, dir, max, 0, 0);
 }
 
-void change100ToMaxSmart(uint16_t &v, int dir, uint16_t max)
+void change100ToMaxSmart(uint16_t *v, int dir, uint16_t max)
 {
     return change0ToMaxSmart(v, dir, max, 0, 100);
 }
 
-void change0ToMaxSmart(uint16_t &v, int dir, uint16_t max, int16_t step, uint8_t starting)
+void change0ToMaxSmart(uint16_t *v, int dir, uint16_t max, int16_t step, uint8_t starting)
 {
     uint16_t r;
 
-    uint8_t dv = digits(v);
+    uint8_t dv = digits(*v);
     if(step == 0) {
         step = 1;
         if(dv>1) step = pow10(dv-2);
     }
 
-    r = v%step;
+    r = (*v)%step;
 
     if(r) {
         if(dir > 0) step -=r;
         else step = r;
     }
-    if(dir > 0) ADD_MAX(v, step, max);
-    else SUB_MIN(v, step ,starting);
+    if(dir > 0) ADD_MAX(*v, step, max);
+    else SUB_MIN(*v, step ,starting);
 }
 
 uint8_t waitButtonPressed()

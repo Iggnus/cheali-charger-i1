@@ -28,10 +28,10 @@
 #include "Balancer.h"
 
 //TODO_NJ
-#include "LcdPrint.h"     
+#include "LcdPrint.h"
 #include "Screen.h"
 #include "TheveninMethod.h"
-   
+
 #if defined(ENABLE_FAN) && defined(ENABLE_T_INTERNAL)
 #define MONITOR_T_INTERNAL_FAN
 #endif
@@ -40,19 +40,20 @@
 
 namespace Monitor {
 
-	uint16_t etaDeltaSec;
+    uint16_t etaDeltaSec;
     uint16_t etaStartTimeCalc;
 
     bool isBalancePortConnected;
 
-	bool on_;
+    bool on_;
     uint8_t procent_;
     uint16_t startTime_totalTime_U16_;
     uint32_t totalBalanceTime_;
     uint32_t totalChargDischargeTime_;
 
-	uint16_t VoutMinMesured_;
-	
+    uint16_t Vout_plus_adcMinLimit_;
+    uint16_t Vout_plus_adcMaxLimit_;
+
 	AnalogInputs::ValueType c_limit;
 
 #ifdef MONITOR_T_INTERNAL_FAN
@@ -99,15 +100,15 @@ uint16_t Monitor::getTimeSec()
 }
 
 uint16_t Monitor::getTotalBalanceTimeSec() {
-	return totalBalanceTime_/1000;
+    return totalBalanceTime_/1000;
 }
 
 uint16_t Monitor::getTotalChargeDischargeTimeSec() {
-	return totalChargDischargeTime_/1000;
+    return totalChargDischargeTime_/1000;
 }
 
 uint16_t Monitor::getTotalChargeDischargeTimeMin() {
-	return totalChargDischargeTime_/1000/60;
+    return totalChargDischargeTime_/1000/60;
 }
 
 
@@ -149,11 +150,30 @@ void Monitor::update()
 #endif
 }
 
-void Monitor::powerOn() {
-    VoutMinMesured_ = AnalogInputs::reverseCalibrateValue(AnalogInputs::Vout_plus_pin, AnalogInputs::CONNECTED_MIN_VOLTAGE);
+void Monitor::powerOn()
+{
+
+    Vout_plus_adcMinLimit_ = AnalogInputs::reverseCalibrateValue(AnalogInputs::Vout_plus_pin, AnalogInputs::CONNECTED_MIN_VOLTAGE);
+
+    {
+        //Make sure Vout_plus gets not higher VCharge + 3V (additional safety limit for protection ICs)
+        AnalogInputs::ValueType Vmax = ProgramData::currentProgramData.getVoltage(ProgramData::VCharge);
+        Vmax += ANALOG_VOLT(3.000);
+        if(Vmax > MAX_CHARGE_V) {
+            Vmax = MAX_CHARGE_V;
+        }
+        hardware::setVoutCutoff(Vmax);
+
+        Vout_plus_adcMaxLimit_ = AnalogInputs::reverseCalibrateValue(AnalogInputs::Vout_plus_pin, Vmax);
+        if(Vout_plus_adcMaxLimit_ > ANALOG_INPUTS_MAX_ADC_Vout_plus_pin) {
+            Vout_plus_adcMaxLimit_ = ANALOG_INPUTS_MAX_ADC_Vout_plus_pin;
+        }
+    }
+
     isBalancePortConnected = AnalogInputs::isBalancePortConnected();
     update();
 	c_limit  = ProgramData::currentProgramData.getCapacityLimit();
+//	c_limit  = 15;
     startTime_totalTime_U16_ = Time::getSecondsU16();
     resetAccumulatedMeasurements();
     on_ = true;
@@ -188,46 +208,53 @@ void Monitor::doSlowInterrupt()
 
 Strategy::statusType Monitor::run()
 {
-	if(!on_) {
-		return Strategy::RUNNING;
-	}
+    if(!on_) {
+        return Strategy::RUNNING;
+    }
 #ifdef ENABLE_T_INTERNAL
     AnalogInputs::ValueType t = AnalogInputs::getRealValue(AnalogInputs::Tintern);
 
     if(t > settings.dischargeTempOff + Settings::TempDifference) {
-        Program::stopReason_ = string_internalTemperatureToHigh;
+        Program::stopReason = string_internalTemperatureToHigh;
         return Strategy::ERROR;
     }
 #endif
 
     AnalogInputs::ValueType VMout = AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin);
-    if(ANALOG_INPUTS_MAX_ADC_VALUE <= VMout || (VMout < VoutMinMesured_ && Discharger::isPowerOn())) {
-        Program::stopReason_ = string_batteryDisconnected;
+    if(Vout_plus_adcMaxLimit_ <= VMout || (VMout < Vout_plus_adcMinLimit_ && Discharger::isPowerOn())) {
+        Program::stopReason = string_batteryDisconnected;
         return Strategy::ERROR;
     }
 
     if (isBalancePortConnected != AnalogInputs::isBalancePortConnected()) {
-        Program::stopReason_ = string_balancePortDisconnected;
+        Program::stopReason = string_balancePortDisconnected;
         return Strategy::ERROR;
     }
 
     AnalogInputs::ValueType i_limit = Strategy::maxI + ANALOG_AMP(1.000);
     if (i_limit < AnalogInputs::getIout()) {
-        Program::stopReason_ = string_outputCurrentToHigh;
-        return Strategy::ERROR;               
+        Program::stopReason = string_outputCurrentToHigh;
+        return Strategy::ERROR;
     }
 
     AnalogInputs::ValueType Vin = AnalogInputs::getRealValue(AnalogInputs::Vin);
     if(Vin < settings.inputVoltageLow) {
-        Program::stopReason_ = string_inputVoltageToLow;
+        Program::stopReason = string_inputVoltageToLow;
         return Strategy::ERROR;
     }
 
     AnalogInputs::ValueType c = AnalogInputs::getRealValue(AnalogInputs::Cout);
     if(c_limit != PROGRAM_DATA_MAX_CHARGE && c >= c_limit) {
-		c_limit  = ProgramData::currentProgramData.getCapacityLimit();
-        Program::stopReason_ = string_capacityLimit;
-        return Strategy::COMPLETE;
+        Program::stopReason = string_capacityLimit;
+//		if(c_limit != 15 || (ProgramData::currentProgramData.isNiXX() && ProgramData::currentProgramData.battery.C / ProgramData::currentProgramData.battery.Ic > 9)) {
+//			c_limit  = 15;
+		if(c_limit != ProgramData::currentProgramData.getCapacityLimit() || (ProgramData::currentProgramData.isNiXX() && ProgramData::currentProgramData.battery.C / ProgramData::currentProgramData.battery.Ic > 9)) {
+			c_limit  = ProgramData::currentProgramData.getCapacityLimit();
+			return Strategy::COMPLETE;
+		}
+		else {
+			return Strategy::ERROR;
+		}
     }
 
 #ifdef ENABLE_TIME_LIMIT
@@ -236,7 +263,7 @@ Strategy::statusType Monitor::run()
         uint16_t charge_time = getTotalChargeDischargeTimeMin();
         uint16_t time_limit  = ProgramData::currentProgramData.getTimeLimit();
         if(time_limit <= charge_time) {
-            Program::stopReason_ = string_timeLimit;
+            Program::stopReason = string_timeLimit;
             return Strategy::COMPLETE;
         }
     }
@@ -245,7 +272,7 @@ Strategy::statusType Monitor::run()
     if(settings.externT) {
         AnalogInputs::ValueType Textern = AnalogInputs::getRealValue(AnalogInputs::Textern);
         if(settings.externTCO < Textern) {
-            Program::stopReason_ = string_externalTemperatureCutOff;
+            Program::stopReason = string_externalTemperatureCutOff;
             return Strategy::ERROR;
         }
     }

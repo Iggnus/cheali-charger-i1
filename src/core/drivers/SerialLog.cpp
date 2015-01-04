@@ -34,6 +34,10 @@
 
 #include "Monitor.h"
 
+namespace adc {
+    void debug();
+}
+
 namespace SerialLog {
     enum State { On, Off, Starting };
     uint32_t startTime;
@@ -130,6 +134,7 @@ void doIdle()
             send();
         }
     }
+    adc::debug();
 }
 
 #else //ENABLE_SERIAL_LOG
@@ -160,6 +165,19 @@ void printString(const char *s)
     }
 }
 
+void printString_P(const char *s)
+{
+    char c;
+    while(1) {
+        c = pgm::read(s);
+        if(!c)
+            return;
+
+        printChar(c);
+        s++;
+    }
+}
+
 void printUInt(uint16_t x)
 {
     char buf[8];
@@ -169,12 +187,19 @@ void printUInt(uint16_t x)
     printString(buf);
 }
 
+void printInt(int16_t x)
+{
+    if(x<0) {
+        printChar('-');
+        x=-x;
+    }
+    printUInt(x);
+}
+
 void printULong(uint32_t x)
 {
-//    char buf[8];
     char buf[15];
     char *str = buf;
-//    uint8_t maxSize = 7;
     uint8_t maxSize = 14;
     ::printULong(str, maxSize, x);
     printString(buf);
@@ -190,7 +215,7 @@ void sendHeader(uint16_t channel)
     printChar('$');
     printUInt(channel);
     printD();
-    printUInt(Program::programType_+1);
+    printUInt(Program::programType+1);
     printD();
 
     printUInt(currentTime/1000);   //timestamp

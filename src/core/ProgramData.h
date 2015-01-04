@@ -31,8 +31,8 @@
 struct ProgramData {
 
     enum BatteryClass {ClassNiXX, ClassPb, ClassLiXX, ClassNiZn};
-    enum BatteryType {Unknown, NiCd, NiMH, Pb, Life, Lilo, Lipo, Li430, Li435, NiZn,    LAST_BATTERY_TYPE};
-    enum VoltageType {VIdle,VCharge,VDischarge,VStorage, VUpperLimit, ValidEmpty,       LAST_VOLTAGE_TYPE};
+    enum BatteryType {Unknown, NiCd, NiMH, Pb, Life, Lilo, Lipo, Li430, Li435, NiZn, LAST_BATTERY_TYPE};
+    enum VoltageType {VIdle, VCharge, VDischarge, VStorage, ValidEmpty, LAST_VOLTAGE_TYPE};
 
 
     struct BatteryData {
@@ -43,7 +43,7 @@ struct ProgramData {
 //#ifdef ENABLE_TIME_LIMIT: to ensure the same eeprom layout Time is always enabled
         uint16_t time;
 
-    };
+    } CHEALI_EEPROM_PACKED;
 
     BatteryData battery;
     char name[PROGRAM_DATA_MAX_NAME];

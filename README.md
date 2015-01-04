@@ -1,6 +1,6 @@
 Welcome to cheali-charger!
 
-Fork of ARM-compatible Pawel's firmware (Branch:master at 5.12.2014) https://github.com/stawel/cheali-charger/tree/master
+Fork of ARM-compatible Pawel's firmware (Branch:master at 04.01.2015) https://github.com/stawel/cheali-charger/tree/master
 
 ---
 
@@ -21,13 +21,11 @@ changes
 + batteries can be charged from 0 voltage
 + long press Stop key for stop - prevents accidental stop with loosing data
 * changed routine for energy calculation
-* improved Time::diffU16() routine
-* improved delay accuracy  (DelayStrategy switched to seconds)
 
 
 Now it is possible to change main parameters while charging discharging and cycling.
 New voltage/current will be actual till the battery type change. It does not stores to EEPROM.
-New capacity limit will be used only once. Capacity limit can be used for skip first discharge in cycling mode
+New capacity limit will be used only once. For example it can be used for skipping of first discharge in cycling mode
 
 On-the-fly current adjustment in not tested with NiCD and NiMH
 
@@ -36,11 +34,11 @@ this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/Eu
 
 ---
 
-changes
+last changes
 
-05.12.2014
+04.01.2015
 
-
+-
 
 ___
 

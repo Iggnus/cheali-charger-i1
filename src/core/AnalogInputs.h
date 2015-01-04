@@ -20,12 +20,13 @@
 
 #include "AnalogInputsTypes.h"
 #include "HardwareConfig.h"
+#include "memory.h"
 
 #define ANALOG_INPUTS_MAX_CALIBRATION_POINTS    2
 #define ANALOG_INPUTS_DELTA_TIME_MILISECONDS    30000
 #define ANALOG_INPUTS_RESOLUTION                16  // bits
 
-#define ANALOG_INPUTS_MAX_ADC_VALUE      (((1<<(ANALOG_INPUTS_ADC_RESOLUTION))-1) << ((ANALOG_INPUTS_RESOLUTION) - (ANALOG_INPUTS_ADC_RESOLUTION)))
+#define ANALOG_INPUTS_MAX_ADC_VALUE      (((1<<(ANALOG_INPUTS_ADC_RESOLUTION_BITS))-1) << ((ANALOG_INPUTS_RESOLUTION) - (ANALOG_INPUTS_ADC_RESOLUTION_BITS)))
 
 #define ANALOG_INPUTS_FOR_ALL_PHY(iterator) for(AnalogInputs::Name iterator = AnalogInputs::Name(0); iterator < AnalogInputs::PHYSICAL_INPUTS; iterator = AnalogInputs::Name(iterator + 1) )
 #define ANALOG_INPUTS_FOR_ALL(iterator)     for(AnalogInputs::Name iterator = AnalogInputs::Name(0); iterator < AnalogInputs::ALL_INPUTS;      iterator = AnalogInputs::Name(iterator + 1) )
@@ -38,14 +39,16 @@ namespace AnalogInputs {
     struct CalibrationPoint {
         ValueType x;
         ValueType y;
-    };
+    } CHEALI_EEPROM_PACKED;
+
     struct DefaultValues {
         CalibrationPoint p0;
         CalibrationPoint p1;
-    };
+    } CHEALI_EEPROM_PACKED;
+
     struct Calibration {
         CalibrationPoint p[ANALOG_INPUTS_MAX_CALIBRATION_POINTS];
-    };
+    } CHEALI_EEPROM_PACKED;
 
     enum Name {
         Vout_plus_pin,
@@ -118,6 +121,9 @@ namespace AnalogInputs {
     //get the ADC (measured) value - in this particular moment
     ValueType getADCValue(Name name);
 
+    // get battery voltage, can be Vout or balance port voltage (when connected)
+    ValueType getVbattery();
+    // get voltage on output
     ValueType getVout();
     ValueType getIout();
     ValueType getDeltaLastT();

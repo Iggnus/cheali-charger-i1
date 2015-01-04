@@ -21,11 +21,11 @@
 #include "Strategy.h"
 
 namespace Monitor {
-	extern uint16_t etaDeltaSec;
+    extern uint16_t etaDeltaSec;
     extern bool isBalancePortConnected;
     extern AnalogInputs::ValueType c_limit;    //ign
 
-	Strategy::statusType run();
+    Strategy::statusType run();
     void doIdle();
     void powerOn();
     void powerOff();

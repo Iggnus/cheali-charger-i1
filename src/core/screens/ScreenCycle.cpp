@@ -65,7 +65,7 @@ void Screen::Cycle::displayCycles()
 
     lcdPrintChar(SCREEN_EMPTY_CELL_CHAR);
     lcdPrintTime(cyclesHistoryTime[c*2]);
-    lcdPrintSpaces(1);
+    lcdPrintSpace1();
     lcdPrintChar(SCREEN_FULL_CELL_CHAR);
     lcdPrintTime(cyclesHistoryTime[c*2+1]);
     lcdPrintSpaces();

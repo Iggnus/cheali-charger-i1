@@ -40,6 +40,11 @@ void lcdClear()
 }
 
 
+uint8_t lcdPrintSpace1()
+{
+    return lcdPrintSpaces(1);
+}
+
 uint8_t lcdPrintSpaces()
 {
     return lcdPrintSpaces(16);
@@ -159,6 +164,10 @@ uint8_t lcdPrint(const char *str, uint8_t size)
     return n;
 }
 
+uint8_t lcdPrint_P(const char * const str[], uint8_t index) {
+    return lcdPrint_P(pgm::read(&str[index]));
+}
+
 
 uint8_t lcdPrint_P(const char *str)
 {
@@ -216,7 +225,7 @@ void lcdPrintValue1000(uint16_t x, int8_t dig, bool dot)
 
     if(dig<xdig || dot){
         dot = true;
-        xdig = digits(x/1000);
+        xdig = digits((uint16_t)(x/1000));
         xdig+=1+3; // "."
     }
 
@@ -252,7 +261,7 @@ void lcdPrintValue100(uint16_t x, int8_t dig, bool dot)
 
     if(dig<xdig || dot){
         dot = true;
-        xdig = digits(x/100);
+        xdig = digits((uint16_t)(x/100));
         xdig+=1+2; // "."
     }
 
@@ -445,7 +454,7 @@ void lcdCreateCGRam()
    CGRAM[6] = 0b10001;
    CGRAM[7] = 0b11111;
    lcd.createChar(0, CGRAM); //empty
-   
+
    CGRAM[0] = 0b01110;
    CGRAM[1] = 0b11111;
    CGRAM[2] = 0b10001;
@@ -453,9 +462,9 @@ void lcdCreateCGRam()
    CGRAM[4] = 0b11111;
    CGRAM[5] = 0b11111;
    CGRAM[6] = 0b11111;
-   CGRAM[7] = 0b11111;           
+   CGRAM[7] = 0b11111;
    lcd.createChar(1, CGRAM); //half
-   
+
    CGRAM[0] = 0b01110;
    CGRAM[1] = 0b11111;
    CGRAM[2] = 0b11111;
@@ -463,8 +472,8 @@ void lcdCreateCGRam()
    CGRAM[4] = 0b11111;
    CGRAM[5] = 0b11111;
    CGRAM[6] = 0b11111;
-   CGRAM[7] = 0b11111;           
-   lcd.createChar(2, CGRAM); //full      
+   CGRAM[7] = 0b11111;
+   lcd.createChar(2, CGRAM); //full
 }
 #endif
 

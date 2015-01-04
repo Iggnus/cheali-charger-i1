@@ -25,10 +25,18 @@
 #include "TheveninMethod.h"
 #include "Balancer.h"
 
-namespace TheveninMethod {
-    enum FallingState {NotFalling, LastRthMesurment, Falling};
+//#define ENABLE_DEBUG
+#include "debug.h"
+//#include "SerialLog.h"		//ign
 
-    FallingState Ifalling_;
+namespace TheveninMethod {
+
+    enum State {ConstantCurrent, RthMesurment, LastRthMesurment, LastConstantCurrent, ConstantVoltage};
+    /* possible transitions:
+     *   RthMesurment <--> ConstantCurrent --> LastRthMesurment --> LastConstantCurrent --> ConstantVoltage
+     */
+
+    State state_;
     AnalogInputs::ValueType newI_;
 
     Thevenin tVout_;
@@ -51,7 +59,7 @@ namespace TheveninMethod {
 
     bool isBelowMin(AnalogInputs::ValueType I)
     {
-        if(Ifalling_ == LastRthMesurment)
+        if(state_ != ConstantVoltage)
             return false;
         return I < Strategy::minI;
     }
@@ -74,7 +82,7 @@ void TheveninMethod::initialize(bool charge)
 {
     bstatus_ = Strategy::COMPLETE;
 
-    AnalogInputs::ValueType Vout = AnalogInputs::getVout();
+    AnalogInputs::ValueType Vout = AnalogInputs::getVbattery();
     tVout_.init(Vout, Strategy::endV, Strategy::minI, charge);
 
     AnalogInputs::ValueType Vend_per_cell = Balancer::calculatePerCell(Strategy::endV);
@@ -84,7 +92,7 @@ void TheveninMethod::initialize(bool charge)
         tBal_[c].init(v, Vend_per_cell, Strategy::minI, charge);
     }
 
-    Ifalling_ = NotFalling;
+    state_ = ConstantCurrent;
     fullCount_ = 0;
     newI_ = 0;
 }
@@ -97,16 +105,18 @@ bool TheveninMethod::balance_isComplete(bool isEndVout, AnalogInputs::ValueType 
     if(Strategy::doBalance) {
         if(I > max(BALANCER_I, Strategy::minI))
             Balancer::done = false;
-        if(Ifalling_ != LastRthMesurment)
+        if(state_ == ConstantCurrent || state_ == ConstantVoltage)
             bstatus_ = Balancer::doStrategy();
     }
 
     if(bstatus_ != Strategy::COMPLETE)
         return false;
 
-    isEndVout |= (Ifalling_ == Falling)  && I < Strategy::minI;
+    if(I <= getMinIwithBalancer() && isEndVout && state_ == ConstantVoltage) {
+	
+//SerialLog::printString("TM::balance_isComplete"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
+//SerialLog::printNL();  //ign
 
-    if(I <= getMinIwithBalancer() && isEndVout) {
         if(fullCount_++ >= 10) {
             return true;
         }
@@ -119,10 +129,16 @@ bool TheveninMethod::balance_isComplete(bool isEndVout, AnalogInputs::ValueType 
 
 AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInputs::ValueType I)
 {
-    bool updateI = AnalogInputs::isOutStable() || isEndVout || TheveninMethod::isBelowMin(I);
+    //update when output is stable or end voltage reached
+    bool updateI = AnalogInputs::isOutStable() || isEndVout;
+
+    //update only when we are not balancing
     updateI = updateI && !Balancer::isWorking();
 
     if(updateI) {
+
+        LogDebug(" I=", I, " tVout_=", tVout_.Rth.iV, ',', tVout_.Rth.uI, ',', tVout_.Vth_);
+
         calculateRthVth(I);
         storeI(I);
 
@@ -138,21 +154,30 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
 
         newI_ = normalizeI(newI_, I);
 
-        //test if maximum output voltage reached
-        switch(Ifalling_) {
-        case NotFalling:
+        switch(state_) {
+        case ConstantCurrent:
             if(!isEndVout)
                 break;
             if(Strategy::doBalance) {
                 Balancer::endBalancing();
                 Balancer::done = false;
             }
-            Ifalling_ = LastRthMesurment;
+            state_ = LastRthMesurment;
             //temporarily turn off
             newI_ = 0;
             break;
+        case RthMesurment:
+            state_ = ConstantCurrent;
+            break;
+        case LastRthMesurment:
+            state_ = LastConstantCurrent;
+            break;
+        case LastConstantCurrent:
+            if(isEndVout)
+                state_ = ConstantVoltage;
+            break;
         default:
-            Ifalling_ = Falling;
+            state_ = ConstantVoltage;
             break;
         }
     }
@@ -162,7 +187,7 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
 
 void TheveninMethod::calculateRthVth(AnalogInputs::ValueType I)
 {
-    tVout_.calculateRthVth(AnalogInputs::getVout(),I);
+    tVout_.calculateRthVth(AnalogInputs::getVbattery(),I);
 
     for(uint8_t c = 0; c < Balancer::getCells(); c++) {
         tBal_[c].calculateRthVth(Balancer::getPresumedV(c),I);
@@ -189,7 +214,11 @@ AnalogInputs::ValueType TheveninMethod::normalizeI(AnalogInputs::ValueType newI,
     }
 
     if(I != newI) {
-        if(Ifalling_ != Falling
+        //update current when:
+        // - we are NOT in the ConstantVoltage state, or
+        // - if we are in ConstantVoltage AND new current is smaller the the previous one, or
+        // - if we are in ConstantVoltage AND we did balancing (current went below minimum)
+        if(state_ != ConstantVoltage
             || newI < I
             || (I <= Strategy::minI && lastBallancingEnded_ != Balancer::balancingEnded)) {
 
@@ -202,7 +231,7 @@ AnalogInputs::ValueType TheveninMethod::normalizeI(AnalogInputs::ValueType newI,
 
 void TheveninMethod::storeI(AnalogInputs::ValueType I)
 {
-    tVout_.storeLast(AnalogInputs::getVout(), I);
+    tVout_.storeLast(AnalogInputs::getVbattery(), I);
 
     for(uint8_t i = 0; i < Balancer::getCells(); i++) {
         AnalogInputs::ValueType vi = Balancer::getPresumedV(i);

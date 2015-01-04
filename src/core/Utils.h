@@ -46,13 +46,14 @@ void callVoidMethod_P(const VoidMethod * method);
 bool testTintern(bool &more, AnalogInputs::ValueType off, AnalogInputs::ValueType on);
 uint16_t pow10(uint8_t n);
 uint8_t digits(uint32_t x);
+uint8_t digits(uint16_t x);
 int8_t sign(int16_t x);
 
-void change100ToMaxSmart(uint16_t &v, int direc, uint16_t max);
-void change0ToMaxSmart(uint16_t &v, int direc, uint16_t max);
-void change0ToMaxSmart(uint16_t &v, int direc, uint16_t max, int16_t step, uint8_t starting);
-void change0ToMax(uint16_t &v, int direc, uint8_t max);
-void change1ToMax(uint16_t &v, int direc, uint8_t max);
+void change100ToMaxSmart(uint16_t *v, int direc, uint16_t max);
+void change0ToMaxSmart(uint16_t *v, int direc, uint16_t max);
+void change0ToMaxSmart(uint16_t *v, int direc, uint16_t max, int16_t step, uint8_t starting);
+void change0ToMax(uint16_t *v, int direc, uint8_t max);
+void change1ToMax(uint16_t *v, int direc, uint8_t max);
 
 uint8_t waitButtonPressed();
 #ifdef FREEZE_COMPLETED
@@ -71,4 +72,3 @@ namespace Utils
 }
 
 #endif /* UTILS_H_ */
-

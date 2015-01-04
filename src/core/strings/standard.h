@@ -52,7 +52,7 @@ namespace options {
 }
 
 namespace programData {
-    STRING(unlimited,   "unlimited");
+    STRING(unlimited,   "nolimit");
     STRING(minutes,     "min.");
 
     //battery types
@@ -81,6 +81,7 @@ namespace settingsMenu {
     STRING(enabledV,    "enab dV:   ");
     STRING(NiMHdV,      "NiMH dV:");
     STRING(NiCddV,      "NiCd dV:");
+    STRING(Rwire,       "Rwire:");		//ign? m.b. ifdef?
     STRING(DCcycles,    "D/C cycles:");
     STRING(DCRestTime,  "D/C rest:");
     STRING(AudioBeep,   "beep:      ");
@@ -93,6 +94,7 @@ namespace settingsMenu {
     STRING(dichAggLiXX, "dis agres: ");
     STRING(forceBalanc, "force bal: ");
     STRING(balancErr,   "bal. err:");
+    STRING(adcNoise,    "adc noise: ");
     STRING(UARTview,    "UART: ");
     STRING(UARTspeed,   "speed: ");
     STRING(UARTinput,   "UART inp: ");

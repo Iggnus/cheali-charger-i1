@@ -69,6 +69,6 @@ bool DelayStrategy::isDelay()
 void DelayStrategy::setDelay(uint16_t minutes)
 {
    delay_ = minutes*60;
-   DelayStrategy::powerOn();
+//   DelayStrategy::powerOn();
 }
 

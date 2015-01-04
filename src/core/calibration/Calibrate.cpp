@@ -139,11 +139,12 @@ public:
 
 void copyVbalVout()
 {
+    //info: we assume that Vout_plus_pin and Vout_minus_pin have identically voltage dividers
     AnalogInputs::CalibrationPoint p;
     p.x = AnalogInputs::getAvrADCValue(AnalogInputs::Vout_plus_pin);
+    p.x -= AnalogInputs::getAvrADCValue(AnalogInputs::Vout_minus_pin);
     p.y = AnalogInputs::getRealValue(AnalogInputs::Vbalancer);
     AnalogInputs::setCalibrationPoint(AnalogInputs::Vout_plus_pin, 1, p);
-    //info: we assume that Vout_plus_pin and Vout_minus_pin have the same voltage dividers
     AnalogInputs::setCalibrationPoint(AnalogInputs::Vout_minus_pin, 1, p);
 }
 
@@ -319,7 +320,7 @@ public:
         int dir = -1;
         if(key == BUTTON_INC) dir = 1;
         dir *= Keyboard::getSpeedFactor();
-        change0ToMaxSmart(value_, dir, maxValue_, Keyboard::getSpeedFactor(),1);
+        change0ToMaxSmart(&value_, dir, maxValue_, Keyboard::getSpeedFactor(),1);
         setCurrentValue(cName_, value_);
     }
 };
@@ -337,6 +338,8 @@ void calibrateI(bool charging, uint8_t point, AnalogInputs::ValueType current)
             name1 = AnalogInputs::IsmpsSet;
             name2 = AnalogInputs::Ismps;
             SMPS::powerOn();
+            hardware::setVoutCutoff(MAX_CHARGE_V);
+
         } else {
             name1 = AnalogInputs::IdischargeSet;
             name2 = AnalogInputs::Idischarge;
@@ -445,12 +448,11 @@ void calibrateTemp(AnalogInputs::Name name)
 }
 
 
-/* calibration menu*/
+/* calibration menu */
 
 
 void run()
 {
-//    Program::programState_ = Program::Calibration;
     StaticMenu menu(calibrateMenu);
     int8_t i;
     do {
@@ -477,8 +479,76 @@ void run()
         SerialLog::powerOff();
 
     } while(true);
-    Program::programState_ = Program::Done;
+    Program::programState = Program::Done;
 }
+
+/* calibration check */
+
+bool checkMax(AnalogInputs::ValueType maxVal, uint16_t maxAdc, AnalogInputs::Name name)
+{
+    AnalogInputs::ValueType t = AnalogInputs::calibrateValue(name, maxAdc);
+    if(t < maxVal+maxVal/4
+        && maxVal-maxVal/4 < t)
+        return true;
+    return false;
+}
+
+bool checkVout()
+{
+    // rev point: MAX_CHARGE_V
+    AnalogInputs::ValueType adcMax;
+    adcMax = AnalogInputs::reverseCalibrateValue(AnalogInputs::Vout_plus_pin, ANALOG_VOLT(1.000));
+    adcMax *= MAX_CHARGE_V/ANALOG_VOLT(1.000);
+    return checkMax(MAX_CHARGE_V, adcMax, AnalogInputs::Vout_plus_pin);
+}
+
+bool checkIcharge(AnalogInputs::Name name)
+{
+    // rev point: MAX_CHARGE_I
+    AnalogInputs::ValueType adcMax;
+    adcMax = AnalogInputs::reverseCalibrateValue(name, CALIBRATION_CHARGE_POINT1_mA);
+    adcMax *= MAX_CHARGE_I/CALIBRATION_CHARGE_POINT1_mA;
+    return checkMax(MAX_CHARGE_I, adcMax, name);
+}
+
+bool checkIdischarge(AnalogInputs::Name name)
+{
+    // rev point: CALIBRATION_DISCHARGE_POINT1_mA
+    // we don't use MAX_DISCHARGE_I because on some chargers (imaxB6-clone) it's very off.
+    AnalogInputs::ValueType adcMax;
+    adcMax = AnalogInputs::reverseCalibrateValue(name, CALIBRATION_DISCHARGE_POINT0_mA);
+    adcMax *= CALIBRATION_DISCHARGE_POINT1_mA/CALIBRATION_DISCHARGE_POINT0_mA;
+    return checkMax(CALIBRATION_DISCHARGE_POINT1_mA, adcMax, name);
+}
+
+bool checkAll() {
+    if(!eeprom::check())
+        return false;
+    if(!checkVout()) {
+        Screen::runCalibrationError(string_voltage);
+        return false;
+    }
+    if(!checkIcharge(AnalogInputs::IsmpsSet) || !checkIcharge(AnalogInputs::Ismps)) {
+        Screen::runCalibrationError(string_chargeCurrent);
+        return false;
+    }
+    if(!checkIdischarge(AnalogInputs::IdischargeSet) || !checkIdischarge(AnalogInputs::Idischarge)) {
+        Screen::runCalibrationError(string_dischargeCurrent);
+        return false;
+    }
+    return true;
+}
+
+#ifdef ENABLE_CALIBRATION_CHECK
+bool check() {
+    return checkAll();
+}
+#else
+bool check() {
+    return true;
+}
+#endif
+
 
 } // namespace Calibrate
 

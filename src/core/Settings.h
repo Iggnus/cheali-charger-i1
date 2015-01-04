@@ -36,6 +36,7 @@ struct Settings {
     AnalogInputs::ValueType deltaT;
     uint16_t enable_deltaV;
     int16_t deltaV_NiMH, deltaV_NiCd;
+    AnalogInputs::ValueType Rwire;
     uint16_t DCcycles;
     uint16_t DCRestTime;
     uint16_t audioBeep;
@@ -48,6 +49,7 @@ struct Settings {
     uint16_t dischargeAggressive_LiXX;
     uint16_t forceBalancePort;
     AnalogInputs::ValueType balancerError;
+    uint16_t adcNoise;
     uint16_t UART;
     uint16_t UARTspeed;
     uint16_t UARTinput;
@@ -65,7 +67,7 @@ struct Settings {
     static void load();
     static void save();
     static void restoreDefault();
-};
+} CHEALI_EEPROM_PACKED;
 
 extern Settings settings;
 

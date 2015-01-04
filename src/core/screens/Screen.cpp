@@ -49,12 +49,12 @@ bool OnTheFly_blink2;
 
     uint16_t getConditions() {
         uint16_t c = 0;
-        if(Program::programState_ == Program::Info)
+        if(Program::programState == Program::Info)
             c += PAGE_START_INFO;
         if(Monitor::isBalancePortConnected)
             c += PAGE_BALANCE_PORT;
         c += PAGE_BATTERY(ProgramData::currentProgramData.getBatteryClass());
-        c += PAGE_PROGRAM(Program::programType_);
+        c += PAGE_PROGRAM(Program::programType);
         return c;
     }
 
@@ -135,7 +135,7 @@ void Screen::powerOn()
 }
 
 void Screen::powerOff() {}
-    
+
 
 void Screen::initialize() {
 #ifdef SCREEN_START_DELAY_MS
@@ -167,7 +167,7 @@ namespace Screen {
         lcdPrint_P(firstLine);
         lcdPrintTime(Monitor::getTimeSec());
         lcdSetCursor0_1();
-        lcdPrint_P(Program::stopReason_);
+        lcdPrint_P(Program::stopReason);
         lcdPrintSpaces();
     }
 }
@@ -238,17 +238,23 @@ void Screen::displayResettingEeprom()
 
 
 void Screen::runResetEepromDone(uint8_t before, uint8_t after) {
-	if(after != 0) {
-	    displayStrings(PSTR("eeprom reset\n"
-	                        "error: "));
-	    lcdPrintUInt(after);
-	} else {
-		//TODO
-		//if(before )
-	    displayStrings(PSTR("please calibrate"));
-	    waitButtonPressed();
-	}
+    if(after != 0) {
+        displayStrings(PSTR("eeprom reset\n"
+                            "error: "));
+        lcdPrintUInt(after);
+    } else {
+        //TODO
+        //if(before )
+        displayStrings(PSTR("please calibrate"));
+        waitButtonPressed();
+    }
 }
+
+void Screen::runCalibrationError(const char *s) {
+    displayStrings(PSTR("calibation error"), s);
+    waitButtonPressed();
+}
+
 
 void Screen::runWelcomeScreen() {
     Screen::displayStrings(PSTR( CHEALI_CHARGER_PROJECT_NAME_STRING "\n"

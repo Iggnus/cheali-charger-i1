@@ -17,7 +17,7 @@
 */
 #include "Hardware.h"
 #include "SMPS.h"
-#include "Program.h"    
+#include "Program.h"
 #include "EditMenu.h"
 #include "LcdPrint.h"
 #include "Screen.h"
@@ -44,17 +44,17 @@ namespace SMPS {
 
     AnalogInputs::ValueType getMaxIout()
     {
-		uint32_t i = MAX_CHARGE_P;
-//		uint32_t i =  ANALOG_WATT(2.000);
+    uint32_t i = MAX_CHARGE_P;
+//    uint32_t i =  ANALOG_WATT(2.000);
         int16_t v = AnalogInputs::getVout();
         i *= ANALOG_VOLT(1);
-#ifdef DYNAMIC_MAX_POWER	
-	//	if(AnalogInputs::getRealValue(AnalogInputs::Vin) > ANALOG_VOLT(10))
-		{
-			v -= AnalogInputs::getRealValue(AnalogInputs::Vin);
-			v += ANALOG_VOLT(10);
-			if(v < 1) v = 1;
-		}
+#ifdef ENABLE_DYNAMIC_MAX_POWER
+  //  if(AnalogInputs::getRealValue(AnalogInputs::Vin) > ANALOG_VOLT(10))
+    {
+      v -= AnalogInputs::getRealValue(AnalogInputs::Vin);
+      v += ANALOG_VOLT(10);
+      if(v < 1) v = 1;
+    }
 #endif
 
         i /= v;

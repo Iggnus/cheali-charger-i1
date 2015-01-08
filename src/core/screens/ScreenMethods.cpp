@@ -150,8 +150,19 @@ void Screen::Methods::displayTime()
 {
     lcdSetCursor0_0();
 #ifdef ENABLE_TIME_LIMIT
+ 	if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {			//ign
+		if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
+			ProgramData::currentProgramData.changeTime(Screen::OnTheFly_dir);
+		}
+	}
+
     lcdPrintSpace1();
-    ProgramData::currentProgramData.printTimeString();
+	if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
+		lcdPrintSpaces(7);
+	}
+	else {
+		ProgramData::currentProgramData.printTimeString();
+	}
     lcdPrintSpaces(2);
 #else
     lcdPrint_P(PSTR("time:     "));

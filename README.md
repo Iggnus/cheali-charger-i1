@@ -1,6 +1,6 @@
 Welcome to cheali-charger!
 
-Fork of ARM-compatible Pawel's firmware (Branch:master at 04.01.2015) https://github.com/stawel/cheali-charger/tree/master
+Fork of ARM-compatible Pawel's firmware (Branch:master at 07.01.2015) https://github.com/stawel/cheali-charger/tree/master
 
 ---
 
@@ -17,6 +17,7 @@ changes
 + Manual/Automatic scrolling for Cycle History screens
 + adjustable voltage (before process)
 + On-the-fly adjustable capacity limit (limits screen)
++ On-the-fly adjustable time limit
 + minimal adjustable current - 2x minIout
 + batteries can be charged from 0 voltage
 + long press Stop key for stop - prevents accidental stop with loosing data
@@ -36,9 +37,9 @@ this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/Eu
 
 last changes
 
-04.01.2015
+08.01.2015
 
--
++ On-the-fly adjustable time limit
 
 ___
 

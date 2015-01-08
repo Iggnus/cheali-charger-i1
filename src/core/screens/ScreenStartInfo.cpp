@@ -80,7 +80,7 @@ void Screen::StartInfo::displayStartInfo()
     if(bindex & 1) AnalogInputs::printRealValue(AnalogInputs::Vout, 5);
     else lcdPrintSpaces(5);
 
-    lcdPrintChar(' ');
+    lcdPrintSpace1();
     if(ProgramData::currentProgramData.isLiXX()) {
         //display balance port
         if(bindex & 2) AnalogInputs::printRealValue(AnalogInputs::Vbalancer, 5);

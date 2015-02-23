@@ -323,7 +323,7 @@ public:
         int dir = -1;
         if(key == BUTTON_INC) dir = 1;
         dir *= Keyboard::getSpeedFactor();
-        change0ToMaxSmart(&value_, dir, maxValue_, Keyboard::getSpeedFactor(),1);
+        changeMinToMaxStep(&value_, dir, 1, maxValue_, Keyboard::getSpeedFactor());
         setCurrentValue(cName_, value_);
     }
 };
@@ -490,8 +490,8 @@ void run()
 bool checkMax(AnalogInputs::ValueType maxVal, uint16_t maxAdc, AnalogInputs::Name name)
 {
     AnalogInputs::ValueType t = AnalogInputs::calibrateValue(name, maxAdc);
-    if(t < maxVal+maxVal/4
-        && maxVal-maxVal/4 < t)
+    if(t < maxVal+maxVal/2
+        && maxVal-maxVal/2 < t)
         return true;
     return false;
 }

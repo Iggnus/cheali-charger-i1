@@ -28,6 +28,7 @@
 
 #include "ScreenMethods.h"	//ign
 #include "IO.h"				//ign
+#include "Program.h"    //ign
 //#include "SerialLog.h"    //ign
 
 namespace Strategy {
@@ -51,14 +52,14 @@ namespace Strategy {
 
         if(charge) {
             maxI = ProgramData::currentProgramData.battery.Ic;
-            if(vt == ProgramData::VCharge && ProgramData::currentProgramData.isLiXX()) {
-                endV += settings.overCharge_LiXX * ProgramData::currentProgramData.battery.cells;
-            }
+//            if(vt == ProgramData::VCharge && ProgramData::currentProgramData.isLiXX()) {
+//                endV += settings.overCharge_LiXX * ProgramData::currentProgramData.battery.cells;
+//            }
         } else {
             maxI = ProgramData::currentProgramData.battery.Id;
-            if(vt == ProgramData::VDischarge && ProgramData::currentProgramData.isLiXX()) {
-                endV += settings.overDischarge_LiXX * ProgramData::currentProgramData.battery.cells;
-            }
+//            if(vt == ProgramData::VDischarge && ProgramData::currentProgramData.isLiXX()) {
+//                endV += settings.overDischarge_LiXX * ProgramData::currentProgramData.battery.cells;
+//            }
         }
 
         setMinI(maxI/minIdiv);
@@ -166,8 +167,11 @@ namespace Strategy {
                     run = analizeStrategyStatus(status);
                 }
             }
-            if(!run && exitImmediately)
-                break;
+            if(!run && exitImmediately && status != Strategy::ERROR) {
+//				if(Program::stopReason != Monitor::string_batteryDisconnected) break;
+//				if(status != Strategy::ERROR) break;
+				break;
+			}
 //		} while(Screen::keyboardButton != BUTTON_STOP);
 		} while(Screen::keyboardButton != BUTTON_STOP || !Keyboard::getSpeed());		//ign
 

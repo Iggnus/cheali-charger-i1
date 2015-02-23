@@ -27,7 +27,6 @@
 #include "memory.h"
 #include "Balancer.h"
 
-//TODO_NJ
 #include "LcdPrint.h"
 #include "Screen.h"
 #include "TheveninMethod.h"
@@ -55,11 +54,6 @@ namespace Monitor {
     uint16_t Vout_plus_adcMaxLimit_;
 
 	AnalogInputs::ValueType c_limit;
-
-#ifdef MONITOR_T_INTERNAL_FAN
-    AnalogInputs::ValueType monitor_on_T;
-    AnalogInputs::ValueType monitor_off_T;
-#endif
 
     void calculateDeltaProcentTimeSec();
 
@@ -132,21 +126,14 @@ uint8_t Monitor::getChargeProcent() {
 void Monitor::doIdle()
 {
 #ifdef MONITOR_T_INTERNAL_FAN
+    AnalogInputs::ValueType t_adc = AnalogInputs::getADCValue(AnalogInputs::Tintern);
+    AnalogInputs::ValueType t = AnalogInputs::calibrateValue(AnalogInputs::Tintern, t_adc);
 
-    AnalogInputs::ValueType t = AnalogInputs::getADCValue(AnalogInputs::Tintern);
-    bool retu = false;
-    if(t > monitor_off_T) {
+    if (t < settings.fanTempOn - Settings::TempDifference) {
         hardware::setFan(false);
-    } else if(t < monitor_on_T) {
+    } else if (t > settings.fanTempOn) {
         hardware::setFan(true);
     }
-#endif
-}
-void Monitor::update()
-{
-#ifdef MONITOR_T_INTERNAL_FAN
-    monitor_off_T = AnalogInputs::reverseCalibrateValue(AnalogInputs::Tintern, settings.fanTempOn - Settings::TempDifference);
-    monitor_on_T  = AnalogInputs::reverseCalibrateValue(AnalogInputs::Tintern, settings.fanTempOn);
 #endif
 }
 
@@ -171,7 +158,7 @@ void Monitor::powerOn()
     }
 
     isBalancePortConnected = AnalogInputs::isBalancePortConnected();
-    update();
+
 	c_limit  = ProgramData::currentProgramData.getCapacityLimit();
 //	c_limit  = 15;
     startTime_totalTime_U16_ = Time::getSecondsU16();
@@ -222,8 +209,14 @@ Strategy::statusType Monitor::run()
 
     AnalogInputs::ValueType VMout = AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin);
     if(Vout_plus_adcMaxLimit_ <= VMout || (VMout < Vout_plus_adcMinLimit_ && Discharger::isPowerOn())) {
-        Program::stopReason = string_batteryDisconnected;
-        return Strategy::ERROR;
+		if(ProgramData::currentProgramData.isLiXX() && ProgramData::currentProgramData.battery.cells == 2 && !AnalogInputs::isBalancePortConnected()) {
+			Program::stopReason = string_batteryDisconnected;
+			return Strategy::COMPLETE;
+		}
+		else {
+			Program::stopReason = string_batteryDisconnected;
+			return Strategy::ERROR;
+		}
     }
 
     if (isBalancePortConnected != AnalogInputs::isBalancePortConnected()) {
@@ -245,20 +238,23 @@ Strategy::statusType Monitor::run()
 
     AnalogInputs::ValueType c = AnalogInputs::getRealValue(AnalogInputs::Cout);
     if(c_limit != PROGRAM_DATA_MAX_CHARGE && c >= c_limit) {
-        Program::stopReason = string_capacityLimit;
 //		if(c_limit != 15 || (ProgramData::currentProgramData.isNiXX() && ProgramData::currentProgramData.battery.C / ProgramData::currentProgramData.battery.Ic > 9)) {
 //			c_limit  = 15;
 		if(c_limit != ProgramData::currentProgramData.getCapacityLimit() || (ProgramData::currentProgramData.isNiXX() && ProgramData::currentProgramData.battery.C / ProgramData::currentProgramData.battery.Ic > 9)) {
+			if(c_limit > ProgramData::currentProgramData.getCapacityLimit()) {
+				Program::stopReason = string_capacityLimit;
+			}
 			c_limit  = ProgramData::currentProgramData.getCapacityLimit();
 			return Strategy::COMPLETE;
 		}
 		else {
+			Program::stopReason = string_capacityLimit;
 			return Strategy::ERROR;
 		}
     }
 
 #ifdef ENABLE_TIME_LIMIT
-    if (ProgramData::currentProgramData.getTimeLimit() < 1000)  //unlimited
+    if (ProgramData::currentProgramData.getTimeLimit() < PROGRAM_DATA_MAX_TIME)  //unlimited
     {
         uint16_t charge_time = getTotalChargeDischargeTimeMin();
         uint16_t time_limit  = ProgramData::currentProgramData.getTimeLimit();

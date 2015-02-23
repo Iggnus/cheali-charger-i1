@@ -31,9 +31,11 @@
 
 namespace TheveninMethod {
 
-    enum State {ConstantCurrent, RthMesurment, LastRthMesurment, LastConstantCurrent, ConstantVoltage};
+    enum State {ConstantCurrentBalancing, ConstantCurrent,
+                RthMesurment, LastRthMesurment, LastConstantCurrent, ConstantVoltageBalancing};
     /* possible transitions:
-     *   RthMesurment <--> ConstantCurrent --> LastRthMesurment --> LastConstantCurrent --> ConstantVoltage
+     *   RthMesurment <--> ConstantCurrentBalancing --> ConstantCurrent -->
+     *   LastRthMesurment --> LastConstantCurrent --> ConstantVoltageBalancing
      */
 
     State state_;
@@ -59,7 +61,7 @@ namespace TheveninMethod {
 
     bool isBelowMin(AnalogInputs::ValueType I)
     {
-        if(state_ != ConstantVoltage)
+        if(state_ != ConstantVoltageBalancing)
             return false;
         return I < Strategy::minI;
     }
@@ -92,7 +94,7 @@ void TheveninMethod::initialize(bool charge)
         tBal_[c].init(v, Vend_per_cell, Strategy::minI, charge);
     }
 
-    state_ = ConstantCurrent;
+    state_ = ConstantCurrentBalancing;
     fullCount_ = 0;
     newI_ = 0;
 }
@@ -103,16 +105,27 @@ void TheveninMethod::initialize(bool charge)
 bool TheveninMethod::balance_isComplete(bool isEndVout, AnalogInputs::ValueType I)
 {
     if(Strategy::doBalance) {
-        if(I > max(BALANCER_I, Strategy::minI))
-            Balancer::done = false;
-        if(state_ == ConstantCurrent || state_ == ConstantVoltage)
+        if(isEndVout && state_ == ConstantCurrentBalancing) {
+            Balancer::endBalancing();
+            state_ = ConstantCurrent;
+        }
+        if(state_ == ConstantCurrentBalancing || state_ == ConstantVoltageBalancing) {
+            if(I > max(BALANCER_I, Strategy::minI))
+                Balancer::done = false;
             bstatus_ = Balancer::doStrategy();
+            if(bstatus_ != Strategy::COMPLETE) {
+                //TheveninMethod is not complete until we finish balancing
+                return false;
+            } else {
+                //if last balancing is complete test if we need a new minCell
+                if(Balancer::isCalibrationRequired()) {
+                    Balancer::resetMinCell();
+                }
+            }
+        }
     }
 
-    if(bstatus_ != Strategy::COMPLETE)
-        return false;
-
-    if(I <= getMinIwithBalancer() && isEndVout && state_ == ConstantVoltage) {
+    if(I <= getMinIwithBalancer() && isEndVout && state_ == ConstantVoltageBalancing) {
 	
 //SerialLog::printString("TM::balance_isComplete"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
 //SerialLog::printNL();  //ign
@@ -130,19 +143,22 @@ bool TheveninMethod::balance_isComplete(bool isEndVout, AnalogInputs::ValueType 
 AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInputs::ValueType I)
 {
     //update when output is stable or end voltage reached
-    bool updateI = AnalogInputs::isOutStable() || isEndVout;
+    bool updateI = AnalogInputs::isOutStable() || (isEndVout && newI_ != 0);
 
-    //update only when we are not balancing
+    //update only when we are not balancing:
+    //- on PowerB6 Balancer::getPresumedV is not stable enough
     updateI = updateI && !Balancer::isWorking();
 
     if(updateI) {
 
-        LogDebug(" I=", I, " tVout_=", tVout_.Rth.iV, ',', tVout_.Rth.uI, ',', tVout_.Vth_);
+        LogDebug(" I=", I, " tVout_: Rth=", tVout_.Rth.iV, ',', tVout_.Rth.uI, " Vth=", tVout_.Vth_);
 
         calculateRthVth(I);
         storeI(I);
 
         newI_ = calculateI();
+
+        LogDebug("newI=", newI_);
 
         if(newI_ < I) {
             //low pass filter
@@ -155,32 +171,37 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
         newI_ = normalizeI(newI_, I);
 
         switch(state_) {
+        case ConstantCurrentBalancing:
+            if(!isEndVout)
+                break;
+            Balancer::endBalancing();
+            state_ = ConstantCurrent;
+            break;
         case ConstantCurrent:
             if(!isEndVout)
                 break;
-            if(Strategy::doBalance) {
-                Balancer::endBalancing();
-                Balancer::done = false;
-            }
             state_ = LastRthMesurment;
             //temporarily turn off
             newI_ = 0;
             break;
         case RthMesurment:
-            state_ = ConstantCurrent;
+            state_ = ConstantCurrentBalancing;
             break;
         case LastRthMesurment:
+            newI_ = 0;
             state_ = LastConstantCurrent;
             break;
         case LastConstantCurrent:
             if(isEndVout)
-                state_ = ConstantVoltage;
+                state_ = ConstantVoltageBalancing;
             break;
         default:
-            state_ = ConstantVoltage;
+            state_ = ConstantVoltageBalancing;
             break;
         }
     }
+
+    LogDebug("normalized newI=", newI_);
     return newI_;
 }
 
@@ -215,11 +236,13 @@ AnalogInputs::ValueType TheveninMethod::normalizeI(AnalogInputs::ValueType newI,
 
     if(I != newI) {
         //update current when:
-        // - we are NOT in the ConstantVoltage state, or
-        // - if we are in ConstantVoltage AND new current is smaller the the previous one, or
-        // - if we are in ConstantVoltage AND we did balancing (current went below minimum)
-        if(state_ != ConstantVoltage
+        // - we are NOT in the ConstantVoltageBalancing state, or
+        // - if we are in ConstantVoltageBalancing AND new current is smaller then the previous one, or
+        // - if we are in ConstantVoltageBalancing AND new current is not larger then the minimum, or
+        // - if we are in ConstantVoltageBalancing AND we did balancing (current went below minimum)
+        if(state_ != ConstantVoltageBalancing
             || newI < I
+            || newI <= getMinIwithBalancer()
             || (I <= Strategy::minI && lastBallancingEnded_ != Balancer::balancingEnded)) {
 
             lastBallancingEnded_ = Balancer::balancingEnded;

@@ -123,7 +123,7 @@ void Screen::Methods::displayCIVlimits()
 
  	if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {			//ign
 		if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
-			change0ToMaxSmart(&Monitor::c_limit, Screen::OnTheFly_dir, PROGRAM_DATA_MAX_CHARGE,0,10);
+			changeMinToMaxSmart(&Monitor::c_limit, Screen::OnTheFly_dir, 10, PROGRAM_DATA_MAX_CHARGE);
 		}
 	}
 

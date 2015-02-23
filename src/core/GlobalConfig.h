@@ -41,7 +41,6 @@
 
 #define ENABLE_CALIBRATION
 #define ENABLE_CALIBRATION_CHECK
-#define ENABLE_R_WIRE
 
 
 #define FREEZE_COMPLETED
@@ -55,7 +54,7 @@
  * maximum charge current will be determined
  * dynamically based on power supply voltage
  */
-#define ENABLE_DYNAMIC_MAX_POWER
+//#define ENABLE_DYNAMIC_MAX_POWER
 
 #define STRINGS_HEADER "strings/standard.h"
 

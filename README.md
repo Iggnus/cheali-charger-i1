@@ -18,7 +18,6 @@ changes
 + adjustable voltage (before process)
 + On-the-fly adjustable capacity limit (limits screen)
 + On-the-fly adjustable time limit
-+ minimal adjustable current - 2x minIout
 + batteries can be charged from 0 voltage
 + long press Stop key for stop - prevents accidental stop with loosing data
 * changed routine for energy calculation
@@ -40,6 +39,11 @@ last changes
 08.01.2015
 
 + On-the-fly adjustable time limit
+
+
+23.02.2015
+
++ D/C cycling for 2-cell DSLR's or walkie-talkie's LiXX without balancer
 
 ___
 

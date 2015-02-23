@@ -21,19 +21,18 @@
 #include "GlobalConfig.h"
 #include "HardwareConfigGeneric.h"
 
-//based on: http://www.dx.com/p/2-5-lcd-ac-dc-dual-power-b6ac-80w-rc-balance-charger-discharger-123252
-#undef ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
+//Turnigy Mega 200w X2 has a common display, so we disable custom characters
+#undef ENABLE_LCD_RAM_CG
 
 #define MAX_CHARGE_V            ANALOG_VOLT(27.000)
-#define MAX_CHARGE_I            ANALOG_AMP(6.000)
-#define MAX_CHARGE_P            ANALOG_WATT(80.000)
+#define MAX_CHARGE_I            ANALOG_AMP(10.000)
+#define MAX_CHARGE_P            ANALOG_WATT(200.000)
 
-#define MAX_DISCHARGE_P         ANALOG_WATT(10.000)
-#define MAX_DISCHARGE_I         ANALOG_AMP(2.000)
+#define MAX_DISCHARGE_P         ANALOG_WATT(25.000)
+#define MAX_DISCHARGE_I         ANALOG_AMP(5.000)
 
-
-//1-13? correlation
-#define SMPS_UPPERBOUND_VALUE               65000
+#define SMPS_UPPERBOUND_VALUE               TIMER1_PRECISION_PERIOD
 #define DISCHARGER_UPPERBOUND_VALUE         TIMER1_PRECISION_PERIOD
+
 
 #endif /* HARDWARE_CONFIG_H_ */

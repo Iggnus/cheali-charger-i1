@@ -1,6 +1,6 @@
 Welcome to cheali-charger!
 
-Fork of ARM-compatible Pawel's firmware (Branch:master at 07.01.2015) https://github.com/stawel/cheali-charger/tree/master
+Fork of ARM-compatible Pawel's firmware (Branch:master at 21.02.2015) https://github.com/stawel/cheali-charger/tree/master
 
 ---
 

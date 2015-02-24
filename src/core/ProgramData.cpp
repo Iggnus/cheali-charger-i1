@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#define __STDC_LIMIT_MACROS
 #include "ProgramData.h"
 #include "memory.h"
 #include "LcdPrint.h"
@@ -372,7 +373,8 @@ void ProgramData::printTimeString() const
 
 void ProgramData::changeTime(int direction)
 {
-    change0ToInfSmart(&battery.time, direction);
+	changeMinToMaxSmart(&battery.time, direction, 1, UINT16_MAX);
+//    change0ToInfSmart(&battery.time, direction);
     check();
 }
 #endif

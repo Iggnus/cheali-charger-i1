@@ -48,7 +48,8 @@ namespace Strategy {
     }
 
     void setVI(ProgramData::VoltageType vt, bool charge) {
-        endV = ProgramData::currentProgramData.getVoltage(vt);
+        //endV = ProgramData::currentProgramData.getVoltage(vt);
+        if(vt != ProgramData::VIdle) endV = ProgramData::currentProgramData.getVoltage(vt);
 
         if(charge) {
             maxI = ProgramData::currentProgramData.battery.Ic;

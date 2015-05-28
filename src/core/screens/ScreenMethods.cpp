@@ -92,7 +92,8 @@ void Screen::Methods::displayFirstScreen()
 		if(!IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
 			if(Screen::OnTheFly_dir) {
 				ProgramData::currentProgramData.changeId(Screen::OnTheFly_dir);
-				Strategy::setVI(ProgramData::currentProgramData.VDischarge, false);
+				//Strategy::setVI(ProgramData::currentProgramData.VDischarge, false);
+				Strategy::setVI(ProgramData::VIdle, false);
 			}
 			if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
 			else lcdPrintSpaces(9);
@@ -100,7 +101,8 @@ void Screen::Methods::displayFirstScreen()
 		else if(!IO::digitalRead(SMPS_DISABLE_PIN)) {
 			if(Screen::OnTheFly_dir) {
 				ProgramData::currentProgramData.changeIc(Screen::OnTheFly_dir);
-				Strategy::setVI(ProgramData::VCharge, true);
+				//Strategy::setVI(ProgramData::VCharge, true);
+				Strategy::setVI(ProgramData::VIdle, true);
 			}							
 			if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
 			else lcdPrintSpaces(9);

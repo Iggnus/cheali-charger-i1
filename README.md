@@ -36,14 +36,20 @@ this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/Eu
 
 last changes
 
-08.01.2015
 
-+ On-the-fly adjustable time limit
+29.05.2015
+
+* Bugfix - Wrong ending voltage at storage process
 
 
 23.02.2015
 
 + D/C cycling for 2-cell DSLR's or walkie-talkie's LiXX without balancer
+
+
+08.01.2015
+
++ On-the-fly adjustable time limit
 
 ___
 

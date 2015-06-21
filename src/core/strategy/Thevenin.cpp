@@ -23,6 +23,9 @@
 #include "Thevenin.h"
 #include "Utils.h"
 
+//#include "TheveninMethod.h"
+//#include "SerialLog.h"		//ign
+
 AnalogInputs::ValueType Resistance::getReadableRth()
 {
     if(uI == 0)
@@ -53,13 +56,19 @@ void Thevenin::init(AnalogInputs::ValueType Vth,AnalogInputs::ValueType Vmax, An
 
 AnalogInputs::ValueType Thevenin::calculateI(AnalogInputs::ValueType v) const
 {
+//SerialLog::printString("T::calculateI "); SerialLog::printUInt(v); SerialLog::printD(); SerialLog::printUInt(VLast_); SerialLog::printD();   //igntst
+
     int32_t i;
     i  = v;
-    i -= Vth_;
+	i -= VLast_;
     i *= Rth.uI;
-    if(Rth.iV == 0) return UINT16_MAX;
-    i /= Rth.iV;
-    if(i >  UINT16_MAX) return  UINT16_MAX;
+	if(Rth.iV != 0) i /= Rth.iV;
+	else return UINT16_MAX;
+	//if(i < 0) i /= 2;			//ign	negative feedback speed-up
+//SerialLog::printLong(i);   //igntst
+//SerialLog::printNL();  //igntst
+	i += ILast_;
+	if(i >  UINT16_MAX) return UINT16_MAX;
     if(i < 0) return 0;
     return i;
 }
@@ -88,8 +97,8 @@ void Thevenin::calculateRth(AnalogInputs::ValueType v, AnalogInputs::ValueType i
         }
         if(sign(rth_v) == sign(Rth.iV)) {
             ILastDiff_ = rth_i;
-            Rth.iV = rth_v;
-            Rth.uI = rth_i;
+            Rth.iV = rth_v;			// ∆V
+            Rth.uI = rth_i;			// ∆I
         }
     }
 }
@@ -102,5 +111,9 @@ void Thevenin::calculateVth(AnalogInputs::ValueType v, AnalogInputs::ValueType i
     VRth /= Rth.uI;
     if(v < VRth) Vth_ = 0;
     else Vth_ = v - VRth;
+
+//SerialLog::printString("T::Vth "); SerialLog::printInt(Rth.iV); SerialLog::printD(); SerialLog::printUInt(Rth.uI); SerialLog::printD();SerialLog::printLong(Vth_);  //ign
+//SerialLog::printNL();  //ign
+
 }
 

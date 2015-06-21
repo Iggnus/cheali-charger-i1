@@ -21,9 +21,9 @@
 #include "Utils.h"
 
 #define CHEALI_CHARGER_PROJECT_NAME                     cheali-charger
-#define CHEALI_CHARGER_BUILDNUMBER                      20150223
+#define CHEALI_CHARGER_BUILDNUMBER                      20150621
 #define CHEALI_CHARGER_VERSION                          0.99
-#define CHEALI_CHARGER_FULL_VERSION                     0.99_20150223
+#define CHEALI_CHARGER_FULL_VERSION                     0.99_20150621
 
 #define CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION       9
 #define CHEALI_CHARGER_EEPROM_PROGRAMDATA_VERSION       2

@@ -26,9 +26,9 @@
 
 #define STRATEGY_DISABLE_OUTPUT_AFTER_SECONDS (3*60)
 
-#include "ScreenMethods.h"	//ign
-#include "IO.h"				//ign
-#include "Program.h"    //ign
+#include "ScreenMethods.h"  //ign
+#include "IO.h"        //ign
+//#include "Program.h"    //ign
 //#include "SerialLog.h"    //ign
 
 namespace Strategy {
@@ -39,31 +39,25 @@ namespace Strategy {
     AnalogInputs::ValueType endV;
     AnalogInputs::ValueType maxI;
     AnalogInputs::ValueType minI;
-    uint8_t minIdiv;
     bool doBalance;
 
-    void setMinI(AnalogInputs::ValueType i)  {
-        if (i < settings.minIout) i = settings.minIout;
-        minI = i;
-    }
-
     void setVI(ProgramData::VoltageType vt, bool charge) {
-        //endV = ProgramData::currentProgramData.getVoltage(vt);
-        if(vt != ProgramData::VIdle) endV = ProgramData::currentProgramData.getVoltage(vt);
+		if(vt != ProgramData::VIdle) endV = ProgramData::getVoltage2(vt);
 
         if(charge) {
-            maxI = ProgramData::currentProgramData.battery.Ic;
+            maxI = ProgramData::battery.Ic;
+            minI = ProgramData::battery.minIc;
 //            if(vt == ProgramData::VCharge && ProgramData::currentProgramData.isLiXX()) {
 //                endV += settings.overCharge_LiXX * ProgramData::currentProgramData.battery.cells;
 //            }
         } else {
-            maxI = ProgramData::currentProgramData.battery.Id;
+            maxI = ProgramData::battery.Id;
+            minI = ProgramData::battery.minId;
 //            if(vt == ProgramData::VDischarge && ProgramData::currentProgramData.isLiXX()) {
 //                endV += settings.overDischarge_LiXX * ProgramData::currentProgramData.battery.cells;
 //            }
         }
 
-        setMinI(maxI/minIdiv);
     }
 
     void strategyPowerOn() {
@@ -100,21 +94,21 @@ namespace Strategy {
         Buzzer::soundProgramComplete();
         waitButtonOrDisableOutput();
 #else
-		uint16_t time = Time::getSecondsU16();
+    uint16_t time = Time::getSecondsU16();
         Buzzer::soundProgramComplete();
-		AnalogInputs::powerOff();
-		IO::digitalWrite(OUTPUT_DISABLE_PIN, false);
-		do {
-			Screen::displayScreenProgramCompleted();
-			if(waitButtonPressedLimTime()) break;
-			Screen::Methods::displayFirstScreen();
-			if(waitButtonPressedLimTime()) break;
+    AnalogInputs::powerOff();
+    IO::digitalWrite(OUTPUT_DISABLE_PIN, false);
+    do {
+      Screen::displayScreenProgramCompleted();
+      if(waitButtonPressedLimTime()) break;
+      Screen::Methods::displayFirstScreen();
+      if(waitButtonPressedLimTime()) break;
             if(Time::diffU16(time, Time::getSecondsU16()) > STRATEGY_DISABLE_OUTPUT_AFTER_SECONDS) {
-				IO::digitalWrite(OUTPUT_DISABLE_PIN, true);
+        IO::digitalWrite(OUTPUT_DISABLE_PIN, true);
             }
-		} while(true);
-		Buzzer::soundOff();
-		AnalogInputs::powerOn(false);
+    } while(true);
+    Buzzer::soundOff();
+    AnalogInputs::powerOn(true, false);
 #endif
     }
 
@@ -169,15 +163,16 @@ namespace Strategy {
                 }
             }
             if(!run && exitImmediately && status != Strategy::ERROR) {
-//				if(Program::stopReason != Monitor::string_batteryDisconnected) break;
-//				if(status != Strategy::ERROR) break;
-				break;
-			}
-//		} while(Screen::keyboardButton != BUTTON_STOP);
-		} while(Screen::keyboardButton != BUTTON_STOP || !Keyboard::getSpeed());		//ign
+//        if(Program::stopReason != Monitor::string_batteryDisconnected) break;
+//        if(status != Strategy::ERROR) break;
+        break;
+      }
+//    } while(Screen::keyboardButton != BUTTON_STOP);
+    } while(Screen::keyboardButton != BUTTON_STOP || !Keyboard::getSpeed());    //ign
 
         strategyPowerOff();
         return status;
     }
 } // namespace Strategy
+
 

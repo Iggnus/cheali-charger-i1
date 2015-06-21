@@ -48,8 +48,9 @@ namespace eeprom {
     uint8_t testOrRestore(uint8_t restore) {
         uint8_t test = 0;
 
-        if(testOrRestore((uint16_t*) &data.magicString[0], CHARS_TO_UINT16('c','h'), restore & EEPROM_RESTORE_MAGIC_STRING)) test |= EEPROM_RESTORE_MAGIC_STRING;
-        if(testOrRestore((uint16_t*) &data.magicString[2], CHARS_TO_UINT16('l','i'), restore & EEPROM_RESTORE_MAGIC_STRING)) test |= EEPROM_RESTORE_MAGIC_STRING;
+        if(testOrRestore((uint16_t*) &data.magicString[0], CHARS_TO_UINT16('c','h'), restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
+        if(testOrRestore((uint16_t*) &data.magicString[2], CHARS_TO_UINT16('l','i'), restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
+        if(testOrRestore((uint16_t*) &data.architecture, EEPROM_ARCHITECTURE, restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
 
         if(testOrRestore(&data.calibrationVersion, CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION, restore & EEPROM_RESTORE_CALIBRATION))    test |= EEPROM_RESTORE_CALIBRATION;
         if(testOrRestore(&data.programDataVersion, CHEALI_CHARGER_EEPROM_PROGRAMDATA_VERSION, restore & EEPROM_RESTORE_PROGRAM_DATA))   test |= EEPROM_RESTORE_PROGRAM_DATA;
@@ -67,29 +68,27 @@ namespace eeprom {
         return test;
     }
 
-    bool restoreDefault(uint8_t what) {
-        if(Screen::runAskResetEeprom(what)) {
-            if(what & EEPROM_RESTORE_MAGIC_STRING)  what |= EEPROM_RESTORE_CALIBRATION;
-            if(what & EEPROM_RESTORE_CALIBRATION)   what |= EEPROM_RESTORE_PROGRAM_DATA;
-            if(what & EEPROM_RESTORE_PROGRAM_DATA)  what |= EEPROM_RESTORE_SETTINGS;
+    void restoreDefault(uint8_t what) {
+        Screen::runAskResetEeprom(what);
+        if(what & EEPROM_RESTORE_MAGIC_NUMBER)  what |= EEPROM_RESTORE_CALIBRATION;
+        if(what & EEPROM_RESTORE_CALIBRATION)   what |= EEPROM_RESTORE_PROGRAM_DATA;
+        if(what & EEPROM_RESTORE_PROGRAM_DATA)  what |= EEPROM_RESTORE_SETTINGS;
 
-            Screen::displayResettingEeprom();
-            uint8_t after = testOrRestore(what);
-            Screen::runResetEepromDone(what, after);
-            return true;
-        }
-        return false;
+        Screen::displayResettingEeprom();
+        uint8_t after = testOrRestore(what);
+        Screen::runResetEepromDone(what, after);
     }
 
 #ifdef ENABLE_EEPROM_RESTORE_DEFAULT
     bool check() {
         uint8_t c = testOrRestore(0);
         if(c == 0) return true;
-        return restoreDefault(c);
+        restoreDefault(c);
+        return false;
     }
 
     void restoreDefault() {
-        uint8_t what = testOrRestore(0) | EEPROM_RESTORE_MAGIC_STRING;
+        uint8_t what = testOrRestore(0) | EEPROM_RESTORE_MAGIC_NUMBER;
         restoreDefault(what);
     }
 #endif
@@ -110,7 +109,6 @@ namespace eeprom {
     }
 
     uint16_t getCRC(uint8_t * adr, uint16_t size) {
-        //TODO: write CRC
         uint16_t crc = 0xffff;
         for(uint16_t i = 0; i < size; i++) {
             crc = crc16_update(crc, eeprom::read(&adr[i]));
@@ -128,7 +126,7 @@ namespace eeprom {
     }
 
     bool restoreProgramDataCRC(bool restore) {
-        return testOrRestoreCRC((uint8_t*)&data.programData, sizeof(data.programData), restore);
+        return testOrRestoreCRC((uint8_t*)&data.battery, sizeof(data.battery), restore);
     }
 
     bool restoreSettingsCRC(bool restore) {

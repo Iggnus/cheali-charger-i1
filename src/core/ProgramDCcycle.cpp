@@ -30,20 +30,20 @@ namespace ProgramDCcycle {
 
     Strategy::statusType runDCRestTime()
     {
-        DelayStrategy::setDelay(settings.DCRestTime);
+        DelayStrategy::setDelay(ProgramData::battery.DCRestTime);
         Strategy::strategy = &DelayStrategy::vtable;
         return Strategy::doStrategy();
     }
 }
 
 
-Strategy::statusType ProgramDCcycle::runDCcycle()
+Strategy::statusType ProgramDCcycle::runDCcycle(uint8_t firstCycle, uint8_t lastCycle)
 {
     Strategy::statusType status = Strategy::COMPLETE;
     Strategy::exitImmediately = true;
-    currentCycle = 0;
+    currentCycle = firstCycle;
     while(true) {
-        if (currentCycle == settings.DCcycles*2 - 1) {
+        if (currentCycle == lastCycle) {
             Strategy::exitImmediately = false;
         }
 

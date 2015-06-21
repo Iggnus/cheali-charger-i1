@@ -27,6 +27,7 @@
 
 //#define ENABLE_DEBUG
 #include "debug.h"
+
 //#include "SerialLog.h"		//ign
 
 namespace TheveninMethod {
@@ -160,6 +161,10 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
 
         LogDebug("newI=", newI_);
 
+//SerialLog::printString("TM "); SerialLog::printUInt(I); SerialLog::printD(); SerialLog::printUInt(newI_);  //ign
+//SerialLog::printNL();  //ign
+
+
         if(newI_ < I) {
             //low pass filter
             //static assert: low pass filter overflow
@@ -168,7 +173,11 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
             newI_ = (newI_ + I)/2;
         }
 
+//SerialLog::printUInt(newI_); SerialLog::printD();  //ign
+
         newI_ = normalizeI(newI_, I);
+
+//SerialLog::printUInt(newI_); SerialLog::printNL();  //ign
 
         switch(state_) {
         case ConstantCurrentBalancing:

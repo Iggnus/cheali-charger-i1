@@ -21,6 +21,7 @@
 #include "Screen.h"
 #include "memory.h"
 #include "Settings.h"
+//#include "Program.h"
 
 namespace StartInfoStrategy {
     uint8_t ok_;
@@ -50,14 +51,14 @@ void StartInfoStrategy::powerOff()
 Strategy::statusType StartInfoStrategy::doStrategy()
 {
     bool cell_nr, v_balance, v_out = false, balance;		//ign  v_out = false
+    uint8_t is_cells, should_be_cells;
 
     cell_nr = v_balance = false;
 //    v_out = ! AnalogInputs::isConnected(AnalogInputs::Vout);		//ign  I need to charge 0-voltage batt's
 
     if(Strategy::doBalance) {
-        uint8_t is_cells, should_be_cells;
         is_cells = AnalogInputs::getConnectedBalancePorts();
-        should_be_cells = ProgramData::currentProgramData.battery.cells;
+        should_be_cells = ProgramData::battery.cells;
         cell_nr = (should_be_cells != is_cells);
         v_balance = (is_cells == 0);
 
@@ -82,7 +83,12 @@ Strategy::statusType StartInfoStrategy::doStrategy()
         Buzzer::soundOff();
     }
 
-    balance = (v_balance || cell_nr) && settings.forceBalancePort;
+    balance = (v_balance || cell_nr) && (is_cells != 0);
+
+//    if(ProgramData::battery.type == ProgramData::Unknown
+//            && Program::programType == Program::Charge) {
+//        v_out = false;
+//    }
 
     if(Keyboard::getPressed() == BUTTON_NONE)
         ok_ = 0;

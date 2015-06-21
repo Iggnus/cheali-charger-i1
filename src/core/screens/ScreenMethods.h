@@ -32,6 +32,7 @@ namespace Screen { namespace Methods {
     void displayDeltaTextern();
     void displayDeltaFirst();
     void displayEnergy();
+    void displayFlyMenu();
 
 } };
 

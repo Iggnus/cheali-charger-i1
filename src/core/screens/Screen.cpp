@@ -47,13 +47,17 @@ bool OnTheFly_blink2;
     uint8_t pageNr_;
     uint8_t keyboardButton;
 
+    //see PAGE_PROGRAM
+    //see PAGE_BATTERY
+    STATIC_ASSERT(ProgramData::LAST_BATTERY_CLASS == 4 && Program::LAST_PROGRAM_TYPE == 9 + 2);
+
     uint16_t getConditions() {
         uint16_t c = 0;
         if(Program::programState == Program::Info)
             c += PAGE_START_INFO;
         if(Monitor::isBalancePortConnected)
             c += PAGE_BALANCE_PORT;
-        c += PAGE_BATTERY(ProgramData::currentProgramData.getBatteryClass());
+        c += PAGE_BATTERY(ProgramData::getBatteryClass());
         c += PAGE_PROGRAM(Program::programType);
         return c;
     }
@@ -106,6 +110,8 @@ void Screen::doStrategy()
 
 	if(keyboardButton == BUTTON_INC) OnTheFly_dir = 1;
 	else if(keyboardButton == BUTTON_DEC) OnTheFly_dir = -1;
+//	if(keyboardButton == BUTTON_INC) OnTheFly_dir = keyboardButton;
+//	else if(keyboardButton == BUTTON_DEC) OnTheFly_dir = keyboardButton;
 	else OnTheFly_dir = 0;			
 
 	if(OnTheFly_ < 2) {
@@ -220,15 +226,15 @@ void Screen::displayCalibrationErrorScreen(uint8_t errNo)
     Time::delay(8000);
 }
 
-bool Screen::runAskResetEeprom(uint8_t what)
+void Screen::runAskResetEeprom(uint8_t what)
 {
     lcdClear();
     lcdSetCursor0_0();
     lcdPrint_P(PSTR("eeprom reset:"));
     lcdPrintUInt(what);
     lcdSetCursor0_1();
-    lcdPrint_P(PSTR(" no         yes"));
-    return waitButtonPressed() == BUTTON_START;
+    lcdPrint_P(PSTR("            yes"));
+    while (waitButtonPressed() != BUTTON_START);
 }
 
 void Screen::displayResettingEeprom()

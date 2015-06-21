@@ -20,12 +20,13 @@
 #include "ProgramMenus.h"
 #include "StaticMenu.h"
 #include "eeprom.h"
-
-#include "Screen.h"  //ign
-
-// Program selection depending on the battery type
+#include "ProgramDataMenu.h"
 
 namespace ProgramMenus {
+
+    const Program::ProgramType programNoneMenu[] PROGMEM = {
+            Program::EditBattery,
+    };
 
     const Program::ProgramType programLiXXMenu[] PROGMEM = {
             Program::Charge,
@@ -38,6 +39,7 @@ namespace ProgramMenus {
 #ifdef ENABLE_PROGRAM_MENUS_LIXX_CYCLING
             Program::DischargeChargeCycle,
 #endif
+            Program::CapacityCheck,
             Program::EditBattery,
     };
 
@@ -50,6 +52,7 @@ namespace ProgramMenus {
 #ifdef ENABLE_PROGRAM_MENUS_NIZN_CYCLING
             Program::DischargeChargeCycle,
 #endif
+            Program::CapacityCheck,
             Program::EditBattery,
     };
 
@@ -57,6 +60,7 @@ namespace ProgramMenus {
             Program::Charge,
             Program::Discharge,
             Program::DischargeChargeCycle,
+            Program::CapacityCheck,
             Program::EditBattery,
     };
 
@@ -65,6 +69,7 @@ namespace ProgramMenus {
             Program::Discharge,
             Program::FastCharge,
             Program::DischargeChargeCycle,
+            Program::CapacityCheck,
             Program::EditBattery,
     };
 
@@ -79,6 +84,7 @@ namespace ProgramMenus {
             string_storage,
             string_storageAndBalance,
             string_dcCycle,
+            string_capacityCheck,
             string_editBattery,
     };
 
@@ -105,13 +111,16 @@ namespace ProgramMenus {
         }
     };
 
+    ProgramTypeMenu selectNoneMenu(programNoneMenu);
     ProgramTypeMenu selectLiXXMenu(programLiXXMenu);
     ProgramTypeMenu selectNiXXMenu(programNiXXMenu);
     ProgramTypeMenu selectNiZnMenu(programNiZnMenu);
     ProgramTypeMenu selectPbMenu(programPbMenu);
 
     ProgramTypeMenu * getSelectProgramMenu() {
-        ProgramData::BatteryClass bc = ProgramData::currentProgramData.getBatteryClass();
+        ProgramData::BatteryClass bc = ProgramData::getBatteryClass();
+        if(ProgramData::battery.type == ProgramData::None)
+            return &selectNoneMenu;
         if(bc == ProgramData::ClassNiZn)
             return &selectNiZnMenu;
         if(bc == ProgramData::ClassLiXX)
@@ -124,7 +133,7 @@ namespace ProgramMenus {
 
 void ProgramMenus::selectProgram(int index)
 {
-Screen::OnTheFly_ = 0;           //ign
+//Screen::OnTheFly_ = 0;           //ign
     ProgramData::loadProgramData(index);
     ProgramTypeMenu * selectPrograms = getSelectProgramMenu();
     int8_t menuIndex;
@@ -133,9 +142,9 @@ Screen::OnTheFly_ = 0;           //ign
         if(menuIndex >= 0)  {
             Program::ProgramType prog = selectPrograms->getProgramType(menuIndex);
             if(prog == Program::EditBattery) {
-                ProgramData::currentProgramData.edit(index);
+				ProgramData::loadProgramData(index);	//ign	Reset OnTheFly changes
+                ProgramDataMenu::run();
                 ProgramData::saveProgramData(index);
-                eeprom::restoreProgramDataCRC();
                 selectPrograms = getSelectProgramMenu();
             } else {
                 Program::run(prog);

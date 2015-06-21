@@ -109,8 +109,8 @@ uint16_t Monitor::getTotalChargeDischargeTimeMin() {
 
 uint8_t Monitor::getChargeProcent() {
     uint16_t v1,v2, v;
-    v2 = ProgramData::currentProgramData.getVoltage(ProgramData::VCharge);
-    v1 = ProgramData::currentProgramData.getVoltage(ProgramData::ValidEmpty);
+    v2 = ProgramData::getVoltage2(ProgramData::VCharge);
+    v1 = ProgramData::getVoltage2(ProgramData::ValidEmpty);
     v =  AnalogInputs::getRealValue(AnalogInputs::VoutBalancer);
 
     if(v >= v2) return 99;
@@ -126,14 +126,26 @@ uint8_t Monitor::getChargeProcent() {
 void Monitor::doIdle()
 {
 #ifdef MONITOR_T_INTERNAL_FAN
-    AnalogInputs::ValueType t_adc = AnalogInputs::getADCValue(AnalogInputs::Tintern);
-    AnalogInputs::ValueType t = AnalogInputs::calibrateValue(AnalogInputs::Tintern, t_adc);
+    bool fan;
+    if(settings.fanOn == Settings::FanAlways) {
+        fan = true;
+    } else if (settings.fanOn == Settings::FanDisabled
+               || (settings.fanOn == Settings::FanProgramTemperature && on_ == false)) {
+        fan = false;
+    } else if (settings.fanOn == Settings::FanProgram) {
+        fan = on_;
+    } else if ((settings.fanOn == Settings::FanProgramTemperature && on_ == true)
+               || settings.fanOn == Settings::FanTemperature) {
+        AnalogInputs::ValueType t_adc = AnalogInputs::getADCValue(AnalogInputs::Tintern);
+        AnalogInputs::ValueType t = AnalogInputs::calibrateValue(AnalogInputs::Tintern, t_adc);
 
-    if (t < settings.fanTempOn - Settings::TempDifference) {
-        hardware::setFan(false);
-    } else if (t > settings.fanTempOn) {
-        hardware::setFan(true);
+        if (t < settings.fanTempOn - Settings::TempDifference) {
+            fan = false;
+        } else if (t > settings.fanTempOn) {
+            fan = true;
+        }
     }
+    hardware::setFan(fan);
 #endif
 }
 
@@ -144,7 +156,7 @@ void Monitor::powerOn()
 
     {
         //Make sure Vout_plus gets not higher VCharge + 3V (additional safety limit for protection ICs)
-        AnalogInputs::ValueType Vmax = ProgramData::currentProgramData.getVoltage(ProgramData::VCharge);
+        AnalogInputs::ValueType Vmax = ProgramData::getVoltage2(ProgramData::VCharge);
         Vmax += ANALOG_VOLT(3.000);
         if(Vmax > MAX_CHARGE_V) {
             Vmax = MAX_CHARGE_V;
@@ -159,7 +171,8 @@ void Monitor::powerOn()
 
     isBalancePortConnected = AnalogInputs::isBalancePortConnected();
 
-	c_limit  = ProgramData::currentProgramData.getCapacityLimit();
+	c_limit  = ProgramData::getCapacityLimit();		//igntst
+//	c_limit  = ProgramData::currentProgramData.getCapacityLimit();
 //	c_limit  = 15;
     startTime_totalTime_U16_ = Time::getSecondsU16();
     resetAccumulatedMeasurements();
@@ -209,7 +222,7 @@ Strategy::statusType Monitor::run()
 
     AnalogInputs::ValueType VMout = AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin);
     if(Vout_plus_adcMaxLimit_ <= VMout || (VMout < Vout_plus_adcMinLimit_ && Discharger::isPowerOn())) {
-		if(ProgramData::currentProgramData.isLiXX() && ProgramData::currentProgramData.battery.cells == 2 && !AnalogInputs::isBalancePortConnected()) {
+		if(ProgramData::isLiXX() && ProgramData::battery.cells == 2 && !AnalogInputs::isBalancePortConnected()) {		//igntst
 			Program::stopReason = string_batteryDisconnected;
 			return Strategy::COMPLETE;
 		}
@@ -237,14 +250,14 @@ Strategy::statusType Monitor::run()
     }
 
     AnalogInputs::ValueType c = AnalogInputs::getRealValue(AnalogInputs::Cout);
-    if(c_limit != PROGRAM_DATA_MAX_CHARGE && c >= c_limit) {
+    if(c_limit != ANALOG_MAX_CHARGE && c >= c_limit) {
 //		if(c_limit != 15 || (ProgramData::currentProgramData.isNiXX() && ProgramData::currentProgramData.battery.C / ProgramData::currentProgramData.battery.Ic > 9)) {
 //			c_limit  = 15;
-		if(c_limit != ProgramData::currentProgramData.getCapacityLimit() || (ProgramData::currentProgramData.isNiXX() && ProgramData::currentProgramData.battery.C / ProgramData::currentProgramData.battery.Ic > 9)) {
-			if(c_limit > ProgramData::currentProgramData.getCapacityLimit()) {
+		if(c_limit != ProgramData::getCapacityLimit() || (ProgramData::isNiXX() && ProgramData::battery.capacity / ProgramData::battery.Ic > 9)) {
+			if(c_limit > ProgramData::getCapacityLimit()) {
 				Program::stopReason = string_capacityLimit;
 			}
-			c_limit  = ProgramData::currentProgramData.getCapacityLimit();
+			c_limit  = ProgramData::getCapacityLimit();
 			return Strategy::COMPLETE;
 		}
 		else {
@@ -254,10 +267,10 @@ Strategy::statusType Monitor::run()
     }
 
 #ifdef ENABLE_TIME_LIMIT
-    if (ProgramData::currentProgramData.getTimeLimit() < PROGRAM_DATA_MAX_TIME)  //unlimited
+    if (ProgramData::getTimeLimit() < ANALOG_MAX_TIME_LIMIT)  //unlimited
     {
         uint16_t charge_time = getTotalChargeDischargeTimeMin();
-        uint16_t time_limit  = ProgramData::currentProgramData.getTimeLimit();
+        uint16_t time_limit  = ProgramData::getTimeLimit();
         if(time_limit <= charge_time) {
             Program::stopReason = string_timeLimit;
             return Strategy::COMPLETE;
@@ -265,9 +278,9 @@ Strategy::statusType Monitor::run()
     }
 #endif //ENABLE_TIME_LIMIT
 
-    if(settings.externT) {
+    if(ProgramData::battery.enable_externT) {
         AnalogInputs::ValueType Textern = AnalogInputs::getRealValue(AnalogInputs::Textern);
-        if(settings.externTCO < Textern) {
+        if(ProgramData::battery.externTCO < Textern) {
             Program::stopReason = string_externalTemperatureCutOff;
             return Strategy::ERROR;
         }

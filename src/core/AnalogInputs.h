@@ -148,7 +148,7 @@ namespace AnalogInputs {
 
     void resetMeasurement();
     void resetAccumulatedMeasurements();
-    void powerOn(bool rset);
+    void powerOn(bool enableBatteryOutput = true, bool rset = true);
     void powerOff();
 
 

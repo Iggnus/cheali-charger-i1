@@ -30,12 +30,13 @@
 #include "PolarityCheck.h"
 #include "ScreenStartInfo.h"
 
+#include "ProgramDataMenu.h"
 //#include "SerialLog.h"    //ign
 
 namespace Screen {
 namespace StartInfo {
 
-    const char programString[] PROGMEM = "ChCBBlDiFCStSBCY";
+    const char programString[] PROGMEM = "ChCBBlDiFCStSBCYCC";
 
     void printProgram2chars(Program::ProgramType prog)
     {
@@ -45,30 +46,58 @@ namespace StartInfo {
         }
     }
 
+    void printVoltageString(int8_t dig)
+    {
+        uint16_t voltage = ProgramData::getDefaultVoltage();
+        if(ProgramData::battery.type == ProgramData::Unknown) {
+            lcdPrintVoltage(voltage, dig);
+        } else {
+            uint8_t cells = ProgramData::battery.cells;
+            uint8_t size = 5+3;
+            if(cells > 9) size++;
+            lcdPrintSpaces(dig - size);
+            lcdPrintVoltage(voltage, 5);
+            lcdPrintChar('/');
+            lcdPrintUInt(cells);
+            lcdPrintChar('C');
+        }
+    }
+
+    void printBatteryString() {
+        lcdPrint_P(ProgramData::batteryString, ProgramData::battery.type);
+    }
+
+
 } // namespace Screen
 } // namespace StartInfo
 
 
 void Screen::StartInfo::displayStartInfo()
 {
+//SerialLog::printString("programType "); SerialLog::printUInt(Program::programType); //SerialLog::printD(); SerialLog::printUInt(Rth.uI);  //igntst
+//SerialLog::printNL();  //igntst	
+
+
     lcdSetCursor0_0();
 
- 	if(Screen::OnTheFly_ == 2) {			//ign
-		if(Screen::OnTheFly_dir) {
-			ProgramData::currentProgramData.changeVoltage(Screen::OnTheFly_dir);
-		}
-	}
+   if(Screen::OnTheFly_ == 2) {      //ign
+    if(Screen::OnTheFly_dir) {
+//      ProgramData::changeVoltage(Screen::OnTheFly_dir);
+      ProgramDataMenu::changeVoltage(Screen::OnTheFly_dir);
+	  ProgramData::check();
+    }
+  }
 
-    ProgramData::currentProgramData.printBatteryString();
+    printBatteryString();
     lcdPrintSpace1();
-	if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
-		lcdPrintSpaces(9);
-	}
-	else
-	{
-		ProgramData::currentProgramData.printVoltageString();
-    	lcdPrintSpace1();
-	}
+  if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
+    lcdPrintSpaces(9);
+  }
+  else
+  {
+    printVoltageString(8);
+      lcdPrintSpace1();
+  }
 
     printProgram2chars(Program::programType);
 
@@ -81,7 +110,7 @@ void Screen::StartInfo::displayStartInfo()
     else lcdPrintSpaces(5);
 
     lcdPrintSpace1();
-    if(ProgramData::currentProgramData.isLiXX()) {
+    if(ProgramData::isLiXX()) {
         //display balance port
         if(bindex & 2) AnalogInputs::printRealValue(AnalogInputs::Vbalancer, 5);
         else lcdPrintSpaces(5);
@@ -90,7 +119,8 @@ void Screen::StartInfo::displayStartInfo()
         else lcdPrintSpace1();
     } else {
 
-        lcdPrintCharge(ProgramData::currentProgramData.battery.C, 6);
+        lcdPrintCharge(ProgramData::battery.capacity, 6);
         lcdPrintSpaces();
     }
 }
+

@@ -230,6 +230,7 @@ void saveVoltage(bool doCopyVbalVout, AnalogInputs::Name name1,  AnalogInputs::N
 
 void calibrateVoltage()
 {
+    AnalogInputs::powerOn();
     if(testVout(true)) {
         VoltageMenu v(voltageMenu, voltageName, 9);
         int8_t index;
@@ -240,12 +241,13 @@ void calibrateVoltage()
             if(index <= MAX_BANANCE_CELLS && AnalogInputs::isConnected(Vinput)) {
                 AnalogInputs::doFullMeasurement();
                 AnalogInputs::on_ = false;
-                if(v.runEdit(index))
+                if(v.runEdit())
                     saveVoltage(true, Vinput,pgm::read(&voltageName2[index]));
                 AnalogInputs::on_ = true;
             }
         } while(true);
     }
+    AnalogInputs::powerOff();
 }
 
 
@@ -256,6 +258,7 @@ void calibrateVoltage()
 
 void expertCalibrateVoltage()
 {
+    AnalogInputs::powerOn(false, true);
     PolarityCheck::checkReversedPolarity_ = false;
     //TODO: optimization: this method should be merged with calibrateVoltage
     VoltageMenu v(expertVoltageMenu, expertVoltageName, 7);
@@ -268,12 +271,14 @@ void expertCalibrateVoltage()
             continue;
         AnalogInputs::doFullMeasurement();
         AnalogInputs::on_ = false;
-        if(v.runEdit(index))
+        if(v.runEdit())
             saveVoltage(false, Vinput, Vinput);
         AnalogInputs::on_ = true;
     } while(true);
 
     PolarityCheck::checkReversedPolarity_ = true;
+    AnalogInputs::powerOff();
+
 }
 #endif
 
@@ -334,6 +339,7 @@ void calibrateI(bool charging, uint8_t point, AnalogInputs::ValueType current)
     AnalogInputs::Name name1;
     AnalogInputs::Name name2;
 
+    AnalogInputs::powerOn();
     if(testVout(false)) {
 
         if(charging) {
@@ -358,7 +364,7 @@ void calibrateI(bool charging, uint8_t point, AnalogInputs::ValueType current)
             if(index < 0) break;
             if(index == 0) {
                 setCurrentValue(name1, menu.value_);
-                if(menu.runEdit(index)) {
+                if(menu.runEdit()) {
                     AnalogInputs::doFullMeasurement();
                     AnalogInputs::CalibrationPoint p;
                     p.y = current;
@@ -374,6 +380,7 @@ void calibrateI(bool charging, uint8_t point, AnalogInputs::ValueType current)
         if(charging)   SMPS::powerOff();
         else           Discharger::powerOff();
     }
+    AnalogInputs::powerOff();
 }
 
 void calibrateI(const char * const textMenu[], const AnalogInputs::ValueType  values[])
@@ -425,6 +432,7 @@ void saveTemp(AnalogInputs::Name name, uint8_t point)
 
 void calibrateTemp(AnalogInputs::Name name, uint8_t point)
 {
+    AnalogInputs::powerOn(false, true);
     TempMenu v(name);
     int8_t index;
     do {
@@ -432,11 +440,12 @@ void calibrateTemp(AnalogInputs::Name name, uint8_t point)
         if(index < 0) break;
         if(index == 0) {
             AnalogInputs::on_ = false;
-            if(v.runEdit(index))
+            if(v.runEdit())
                 saveTemp(name, point);
             AnalogInputs::on_ = true;
         }
     } while(true);
+    AnalogInputs::powerOff();
 }
 
 void calibrateTemp(AnalogInputs::Name name)
@@ -462,7 +471,6 @@ void run()
         i = menu.runSimple();
         if(i<0) break;
         SerialLog::powerOn();
-        AnalogInputs::powerOn(true);
         START_CASE_COUNTER;
         switch(i) {
         case NEXT_CASE: calibrateVoltage(); break;
@@ -478,7 +486,6 @@ void run()
         }
         eeprom::restoreCalibrationCRC();
 
-        AnalogInputs::powerOff();
         SerialLog::powerOff();
 
     } while(true);

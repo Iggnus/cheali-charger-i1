@@ -31,8 +31,15 @@
 #include "ScreenMethods.h"
 #include "Balancer.h"
 
-#include "IO.h"		//ign
+#include "IO.h"    //ign
+#include "StaticEditMenu.h"
+#include "TheveninDischargeStrategy.h"
+//#include "SerialLog.h"		//ign
+//SerialLog::printString("getSelector "); SerialLog::printUInt(result); //SerialLog::printD(); SerialLog::printUInt(Rth.uI);  //igntst
+//SerialLog::printNL();  //igntst
 
+using namespace ProgramData;
+using namespace ProgramDataMenu;
 namespace Screen {
 
     void printCharge() {
@@ -69,7 +76,7 @@ namespace Screen {
 
     }
     void printDeltaT() {
-        if(settings.externT) {
+        if(ProgramData::battery.enable_externT) {
             int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaTextern);
             lcdPrintSigned(x*10, 5);
             lcdPrintChar('m');
@@ -88,28 +95,28 @@ namespace Screen {
 void Screen::Methods::displayFirstScreen()
 {
     lcdSetCursor0_0();
- 	if(Screen::OnTheFly_ == 2) {			//ign
-		if(!IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
-			if(Screen::OnTheFly_dir) {
-				ProgramData::currentProgramData.changeId(Screen::OnTheFly_dir);
-				//Strategy::setVI(ProgramData::currentProgramData.VDischarge, false);
-				Strategy::setVI(ProgramData::VIdle, false);
-			}
-			if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
-			else lcdPrintSpaces(9);
-		}
-		else if(!IO::digitalRead(SMPS_DISABLE_PIN)) {
-			if(Screen::OnTheFly_dir) {
-				ProgramData::currentProgramData.changeIc(Screen::OnTheFly_dir);
-				//Strategy::setVI(ProgramData::VCharge, true);
-				Strategy::setVI(ProgramData::VIdle, true);
-			}							
-			if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
-			else lcdPrintSpaces(9);
-		}
-		else lcdPrintSpaces(9);
-	}
-	else printCharge();
+   if(Screen::OnTheFly_ == 2) {      //ign
+    if(!IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
+      if(Screen::OnTheFly_dir) {
+        ProgramData::changeId(Screen::OnTheFly_dir);
+//        Strategy::setVI(ProgramData::VDischarge, false);
+        Strategy::setVI(ProgramData::VIdle, false);
+      }
+      if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
+      else lcdPrintSpaces(9);
+    }
+    else if(!IO::digitalRead(SMPS_DISABLE_PIN)) {
+      if(Screen::OnTheFly_dir) {
+        ProgramData::changeIc(Screen::OnTheFly_dir);
+//        Strategy::setVI(ProgramData::VCharge, true);
+        Strategy::setVI(ProgramData::VIdle, true);
+      }
+      if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
+      else lcdPrintSpaces(9);
+    }
+    else lcdPrintSpaces(9);
+  }
+  else printCharge();
     AnalogInputs::printRealValue(AnalogInputs::Iout,     7);
     lcdPrintSpaces();
 
@@ -123,20 +130,20 @@ void Screen::Methods::displayCIVlimits()
 {
     lcdSetCursor0_0();
 
- 	if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {			//ign
-		if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
-			changeMinToMaxSmart(&Monitor::c_limit, Screen::OnTheFly_dir, 10, PROGRAM_DATA_MAX_CHARGE);
-		}
-	}
+   if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {      //ign
+    if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
+      changeMinToMaxSmart(&Monitor::c_limit, Screen::OnTheFly_dir, 10, ANALOG_MAX_CHARGE);
+    }
+  }
 
-	if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
-		lcdPrintSpaces(8);
-	}
-	else {
-//		lcdPrintCharge(ProgramData::currentProgramData.getCapacityLimit(), 8);
-		lcdPrintCharge(Monitor::c_limit, 8);
-	}
-	
+  if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
+    lcdPrintSpaces(8);
+  }
+  else {
+//    lcdPrintCharge(ProgramData::getCapacityLimit(), 8);
+    lcdPrintCharge(Monitor::c_limit, 8);
+  }
+
     lcdPrintSpace1();
     lcdPrintCurrent(Strategy::maxI, 7);
     //ProgramData::currentProgramData.printIcString();
@@ -152,19 +159,21 @@ void Screen::Methods::displayTime()
 {
     lcdSetCursor0_0();
 #ifdef ENABLE_TIME_LIMIT
- 	if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {			//ign
-		if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
-			ProgramData::currentProgramData.changeTime(Screen::OnTheFly_dir);
-		}
-	}
+   if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {      //ign
+    if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
+      ProgramData::changeTime(Screen::OnTheFly_dir);
+    }
+  }
 
-    lcdPrintSpace1();
-	if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
-		lcdPrintSpaces(7);
-	}
-	else {
-		ProgramData::currentProgramData.printTimeString();
-	}
+    //lcdPrintSpace1();    //igntst
+  if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
+    lcdPrintSpaces(7);
+  }
+  else {
+    //ProgramData::currentProgramData.printTimeString();
+    lcdPrintAnalog(ProgramData::battery.time, 8, AnalogInputs::TimeLimitMinutes);
+
+  }
     lcdPrintSpaces(2);
 #else
     lcdPrint_P(PSTR("time:     "));
@@ -194,14 +203,17 @@ void Screen::Methods::displayR()
 
 void Screen::Methods::displayVinput()
 {
-    lcdSetCursor0_0();
-    lcdPrint_P(PSTR("Vinput="));
-    AnalogInputs::printRealValue(AnalogInputs::Vin, 7);
-    lcdPrintSpaces();
-    lcdSetCursor0_1();
-    lcdPrint_P(PSTR(" limit="));
-    lcdPrintAnalog(settings.inputVoltageLow, AnalogInputs::Voltage, 7);
-    lcdPrintSpaces();
+	if(Screen::OnTheFly_ == 2) Screen::Methods::displayFlyMenu();
+	else {
+		lcdSetCursor0_0();
+		lcdPrint_P(PSTR("Vinput="));
+		AnalogInputs::printRealValue(AnalogInputs::Vin, 7);
+		lcdPrintSpaces();
+		lcdSetCursor0_1();
+		lcdPrint_P(PSTR(" limit="));
+		lcdPrintAnalog(settings.inputVoltageLow, 7, AnalogInputs::Voltage);
+		lcdPrintSpaces();
+	}
 }
 
 void Screen::Methods::displayVout()
@@ -220,7 +232,7 @@ void Screen::Methods::displayTemperature()
 {
     lcdSetCursor0_0();
     lcdPrint_P(PSTR("Text="));
-    if(settings.externT)
+    if(ProgramData::battery.enable_externT)
         AnalogInputs::printRealValue(AnalogInputs::Textern,    5);
     else
         lcdPrint_P(PSTR("-"));
@@ -262,7 +274,7 @@ void Screen::Methods::displayDeltaTextern()
 {
     lcdSetCursor0_0();
     lcdPrint_P(PSTR("Text="));
-    if(settings.externT) {
+    if(ProgramData::battery.enable_externT) {
         lcdPrintTemperature(AnalogInputs::getDeltaLastT(), 9);
     } else {
         lcdPrint_P(PSTR("N/A"));
@@ -276,42 +288,85 @@ void Screen::Methods::displayDeltaTextern()
 
 void Screen::Methods::displayEnergy()
 {
-    bool displayBlink_ = (blink.blinkTime_/8)&1;		//ign_time
-
     lcdSetCursor0_0();
-    if (displayBlink_ == true) {
-        printCharge();
-        AnalogInputs::printRealValue(AnalogInputs::Iout, 7);
-
-        lcdPrintSpaces();
-        lcdSetCursor0_1();
-        printCharAndTime();
-        lcdPrintSpace1();
-    } else {
-        AnalogInputs::printRealValue(AnalogInputs::Pout, 8);
-        lcdPrintSpace1();
-        AnalogInputs::printRealValue(AnalogInputs::Iout, 7);
-        lcdPrintSpaces();
-        lcdSetCursor0_1();
-        AnalogInputs::printRealValue(AnalogInputs::Eout, 8);
-        lcdPrintSpaces(2);
-
-    }
+    AnalogInputs::printRealValue(AnalogInputs::Pout, 8);
+    lcdPrintSpace1();
+    AnalogInputs::printRealValue(AnalogInputs::Iout, 7);
+    lcdPrintSpaces();
+    lcdSetCursor0_1();
+    AnalogInputs::printRealValue(AnalogInputs::Eout, 8);
+    lcdPrintSpaces(2);
 
     uint8_t procent = Monitor::getChargeProcent();
-    if (displayBlink_ == true && SMPS::isPowerOn() && procent < 99) {
-        //display calculated simple ETA
-
-        if(Monitor::etaDeltaSec > 20)  //bigger 20sec for ETA calc (is 1C)
-        {
-            lcdPrintTime(Monitor::getETATime()); //TODO_NJ (not accurate for balancing time)
-        } else {
-            lcdPrint_P(PSTR(" --:--"));
-        }
-    } else {
-        lcdPrintUnsigned(procent, 4);
-        lcdPrint_P(PSTR("%"));
-        lcdPrintSpaces();
-    }
+    lcdPrintUnsigned(procent, 4);
+    lcdPrint_P(PSTR("%"));
+    lcdPrintSpaces();
 }
+
+/*
+#define COND_ALWAYS         StaticEditMenu::Always
+#define COND_NiXX           1
+#define COND_Pb             2
+#define COND_LiXX           4
+#define COND_NiZn           8
+#define COND_LiXX_NiZn      (COND_LiXX+COND_NiZn)
+#define COND_LiXX_NiZn_Pb   (COND_LiXX+COND_NiZn+COND_Pb)
+#define COND_NiXX_Pb        (COND_NiXX+COND_Pb)
+#define COND_BATTERY        (COND_NiXX+COND_Pb+COND_LiXX+COND_NiZn)
+ */
+const cprintf::ArrayData batteryTypeData  PROGMEM = {batteryString, &battery.type};
+const StaticEditMenu::StaticEditData editData[] PROGMEM = {
+{string_adaptiveDis,	15,	{CP_TYPE_ON_OFF,0,&battery.adaptiveDis},	{1, 0, 1}},
+{string_Vc_per_cell,	14,	{CP_TYPE_V,0,&battery.Vc_per_cell},			{10,ANALOG_VOLT(0.0),ANALOG_VOLT(5.0)}},
+{string_Vd_per_cell,	15,	{CP_TYPE_V,0,&battery.Vd_per_cell},			{10,ANALOG_VOLT(0.0),ANALOG_VOLT(5.0)}},
+{NULL,                  StaticEditMenu::Last}
+};
+
+uint16_t getSelector() {
+    STATIC_ASSERT(LAST_BATTERY_CLASS == 4);
+    uint16_t result = 1<<14;
+    if(battery.type != None) result += 1 << getBatteryClass();
+    return result;
+}
+ 
+void editCallback(StaticEditMenu * menu, uint16_t * adr) {
+    if(adr == &ProgramData::battery.adaptiveDis) {
+		TheveninDischargeStrategy::endOnTheveninMethodComplete_ = battery.adaptiveDis;
+        //ProgramData::changedType();
+    } else if(adr == &ProgramData::battery.Vc_per_cell) {
+        if(!IO::digitalRead(SMPS_DISABLE_PIN)) Strategy::setVI(ProgramData::VCharge, true);
+        //ProgramData::changedCapacity();
+    } else if(adr == &ProgramData::battery.Vd_per_cell) {
+        if(!IO::digitalRead(DISCHARGE_DISABLE_PIN)) Strategy::setVI(ProgramData::VDischarge, false);
+        //ProgramData::changedIc();
+    } else if(adr == &ProgramData::battery.Id) {
+        //ProgramData::changedId();
+    }
+//    ProgramData::check();
+//    menu->setSelector(getSelector());
+}
+
+StaticEditMenu menu(editData, editCallback);
+//StaticEditMenu menu(editData);
+int8_t item;
+	
+void Screen::Methods::displayFlyMenu()
+{
+        menu.setSelector(getSelector());
+        item = menu.runSimple();
+        if(item < 0) Screen::OnTheFly_ = 0;
+		else
+        {
+	//        ProgramData::Battery undo(ProgramData::battery);
+            if(!menu.runEdit()) {
+	//			ProgramData::battery = undo;
+            }
+			else {
+				Buzzer::soundSelect();
+            }
+//            settings.apply();
+        }
+//	Screen::OnTheFly_ = 0;
+}
+
 

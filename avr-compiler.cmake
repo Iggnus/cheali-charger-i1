@@ -1,4 +1,3 @@
-
 SET(CSTANDARD "-std=gnu99")
 SET(CDEBUG "-g -gdwarf-2")
 SET(CWARN "-Wall")

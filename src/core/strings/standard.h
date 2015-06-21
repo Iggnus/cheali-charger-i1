@@ -20,6 +20,25 @@
 
 #include "strings_common.h"
 
+namespace AnalogInputs {
+    //units
+    STRING(A,           "A");
+    STRING(V,           "V");
+    STRING(W,           "W");
+    STRING(Wh,          "Wh");
+    STRING(C,           "C");
+    STRING(Ah,          "Ah");
+    STRING(Ohm,         "\xf4");
+    STRING(procent,     "%");
+    STRING(C_m,         "C/m");
+    STRING(minutes,     "m");
+    STRING(unsigned,    "");
+    STRING(unknown,     "U");
+
+    STRING(yes,         "yes");
+    STRING(no,          " no");
+    STRING_SIZE(unlimited,  "nolimit");
+}
 
 namespace Monitor {
     STRING(batteryDisconnected,         "battery disc.");
@@ -42,6 +61,7 @@ namespace ProgramMenus {
     STRING(storage,             "storage");
     STRING(storageAndBalance,   "storage+balanc");
     STRING(dcCycle,             "D>C format");
+    STRING(capacityCheck,       "capacity check");
     STRING(editBattery,         "edit battery");
 }
 
@@ -51,11 +71,11 @@ namespace options {
     STRING(resetDefault, "reset default");
 }
 
-namespace programData {
-    STRING(unlimited,   "nolimit");
-    STRING(minutes,     "min.");
+namespace ProgramData {
+    STRING_SIZE(minutes,    "min.");
 
     //battery types
+    STRING(battery_None,    "None");
     STRING(battery_Unknown, "Unkn");
     STRING(battery_NiCd,    "NiCd");
     STRING(battery_NiMH,    "NiMH");
@@ -68,41 +88,24 @@ namespace programData {
     STRING(battery_NiZn,    "NiZn");
 }
 
-namespace settingsMenu {
-    STRING(unitDeltaT,  "C/m");
-
+namespace SettingsMenu {
     //settings menu
     STRING(backlight,   "backlight:");
     STRING(fanOn,       "fan on:");
+    STRING(fanTempOn,   "|fan T on:");
     STRING(dischOff,    "disch off:");
-    STRING(externT,     "extrn T:");
-    STRING(externTCO,   "extrn TCO:");
-    STRING(dTdt,        "dT/dt:");
-    STRING(enabledV,    "enab dV:");
-    STRING(NiMHdV,      "NiMH dV:");
-    STRING(NiCddV,      "NiCd dV:");
-    STRING(cutoffV_NiMH,"NiMH VCO:");
-    STRING(cutoffV_NiCd,"NiCd VCO:");
-    STRING(Rwire,       "Rwire:");		//ign? m.b. ifdef?
-    STRING(DCcycles,    "D/C cycles:");
-    STRING(DCRestTime,  "D/C rest:");
     STRING(AudioBeep,   "beep:");
-    STRING(minIoutDiv,  "min Iout:  I/");
-    STRING(minIout,     "min Iout:");
-    STRING(capCoff,     "cap COff:");
+    STRING(minIc,       "min Ic:");
+    STRING(minId,       "min Id:");
     STRING(inputLow,    "input low: ");
-    STRING(overChargeLiXX,      "o.charge:");
-    STRING(overDischargeLiXX,   "o.disch:");
-    STRING(dichAggLiXX, "dis agres:");
-    STRING(forceBalanc, "force bal:");
-    STRING(balancErr,   "bal. err:");
     STRING(adcNoise,    "adc noise:");
     STRING(UARTview,    "UART:");
-    STRING(UARTspeed,   "speed:");
-    STRING(UARTinput,   "UART inp:");
+    STRING(UARTspeed,   "|speed:");
+    STRING(UARToutput,  "|output:");
+    STRING(MenuType,    "menus:");
     STRING(reset,       "reset");
 
-    //UART input menu
+    //UARToutput menu
     STRING(temp,    "temp");
     STRING(pin7,    "pin7");
 
@@ -112,29 +115,46 @@ namespace settingsMenu {
     STRING(debug,       "debug");
     STRING(extDebug,    "ext. deb");
     STRING(extDebugAdc, "ext. Adc");
+
+    //fanOn reason menu
+//  STRING(disable,     "disabled"); -- defined in UART view
+    STRING(always,      "always");
+    STRING(FanProgram,  "program");
+    STRING(temperature, "Tempera");
+    STRING(tempProgram, "T-progr");
+
+    //MenuType
+    STRING(simple,      "simple");
+    STRING(advanced,    "advanced");
+
 }
 
-namespace lcd_print {
-    STRING(infinity,    "Inf");
-    STRING(yes,         "yes");
-    STRING(no,          " no");
-    STRING(unit_mV,     "mV");
-}
-
-namespace programDataMenu {
-    STRING(editedName,  "Edit name:");
-    STRING(name,        "Name:");
-
+namespace ProgramDataMenu {
     //menu
-    STRING(batteryType,         "Bat:  ");
-    STRING(voltage,             "V:  ");
-    STRING(capacity,            "Ch: ");
-    STRING(chargeCurrent,       "Ic: ");
-    STRING(dischargeCurrent,    "Id: ");
-    STRING(timeLimit,           "Tlim: ");
-    STRING(createName,          "Create name");
-    STRING(editName,            "Edit name");
-    STRING(resetName,           "Reset name");
+    STRING(batteryType, "battery:");
+    STRING(voltage,     "V:");
+    STRING(Vc_per_cell, "Vc:");
+    STRING(Vd_per_cell, "Vd:");
+    STRING(Vcutoff,     "Vco:");
+    STRING(capacity,    "Cap:");
+    STRING(Ic,          "Ic:");
+    STRING(minIc,       "minIc:");
+    STRING(Id,          "Id:");
+    STRING(minId,       "minId:");
+    STRING(balancErr,   "bal. err:");
+
+    STRING(enabledV,    "enab dV:");
+    STRING(deltaV,      "|dV:");
+
+    STRING(externT,     "extrn T:");
+    STRING(dTdt,        "|dT/dt:");
+    STRING(externTCO,   "|extrn TCO:");
+
+    STRING(timeLimit,   "time:");
+    STRING(capCoff,     "cap COff:");
+    STRING(DCcycles,    "D/C cycles:");
+    STRING(DCRestTime,  "D/C rest:");
+    STRING(adaptiveDis, "adapt dis:");
 }
 
 namespace DeltaChargeStrategy {
@@ -144,10 +164,10 @@ namespace DeltaChargeStrategy {
 }
 
 namespace Calibrate {
-    STRING(connect, "connect");
-    STRING(disconnect, "disconnect");
-    STRING(battery, "battery!");
-    STRING(balancePort,  "balance port!");
+    STRING(connect,     "connect");
+    STRING(disconnect,  "disconnect");
+    STRING(battery,     "battery!");
+    STRING(balancePort, "balance port!");
 
     //calibration main menu
     STRING(voltage,             "voltage");

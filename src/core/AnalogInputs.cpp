@@ -257,10 +257,10 @@ void AnalogInputs::reset()
     }
 }
 
-void AnalogInputs::powerOn(bool rset)
+void AnalogInputs::powerOn(bool enableBatteryOutput, bool rset)
 {
     if(!on_) {
-        hardware::setBatteryOutput(true);
+        hardware::setBatteryOutput(enableBatteryOutput);
         if(rset) reset();
         on_ = true;
         doFullMeasurement();
@@ -354,7 +354,7 @@ void AnalogInputs::printRealValue(Name name, uint8_t dig)
 {
     ValueType x = getRealValue(name);
     Type t = getType(name);
-    lcdPrintAnalog(x, t, dig);
+    lcdPrintAnalog(x, dig, t);
 }
 
 uint16_t AnalogInputs::getCharge()
@@ -379,7 +379,7 @@ void AnalogInputs::doSlowInterrupt()
 	static uint8_t etime;
 	if(on_) {
 		i_charge_ += getIout();
-		if(etime++ > 87) {				//ign  Ones per 10.015 sec
+		if(etime++ > 87) {				//ign  Once per 10.015 sec
 			uint32_t E = getIout();
 			E *= getVout();
 			E /= 100;

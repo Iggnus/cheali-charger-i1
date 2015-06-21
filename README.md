@@ -5,11 +5,10 @@ Fork of Pawel's firmware (Branch:lcdprint_opt at 21.06.2015) https://github.com/
 ___
 
 
-     FOR TESTING.
+     CHANGES
 
 
-changes
-___
+for testing
 
 
 + On-the-fly adjustable current
@@ -40,9 +39,11 @@ last changes
 
 21.06.2015
 
+
+
 ---
-     .     .     .     .     .     .     .     .     .     .
-___
+---
+---
 
 
 This project is an alternative firmware for a variety of lipo chargers,  

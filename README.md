@@ -2,14 +2,14 @@ Welcome to cheali-charger!
 
 Fork of Pawel's firmware (Branch:lcdprint_opt at 21.06.2015) https://github.com/stawel/cheali-charger/tree/lcdprint_opt
 
----
+___
 
 
      FOR TESTING.
 
 
 changes
--------
+___
 
 
 + On-the-fly adjustable current
@@ -33,14 +33,15 @@ On-the-fly current adjustment in not tested with NiCD and NiMH
 this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/EuhUAoyecso
 
 
----
+___
 
 last changes
 
 
 21.06.2015
 
-
+---
+     .     .     .     .     .     .     .     .     .     .
 ___
 
 

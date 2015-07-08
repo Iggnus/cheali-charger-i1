@@ -167,7 +167,7 @@ void Screen::Methods::displayTime()
 
     //lcdPrintSpace1();    //igntst
   if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
-    lcdPrintSpaces(7);
+    lcdPrintSpaces(8);
   }
   else {
     //ProgramData::currentProgramData.printTimeString();

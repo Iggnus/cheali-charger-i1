@@ -7,7 +7,7 @@ ___
 proof of concept - not for every day usage
 
 
-	 **THIS FIRMWARE IS FOR HW-MODED CHARGERS ONLY!**
+	 THIS FIRMWARE IS FOR HW-MODED CHARGERS ONLY!
 	______________________________________________
 
 
@@ -19,8 +19,8 @@ For 150W+ chargers with hardware voltage feedback
 
 How to modify
 
-![Thunder T610](Docs/T610.jpg)
-![Thunder T610](https://raw.githubusercontent.com/Iggnus/cheali-charger-i1/HW_moded_powerSupply/Docs/T610_VFmod.jpg)
+![Thunder T610](https://raw.githubusercontent.com/Iggnus/cheali-charger-i1/HW_moded_powerSupply/Docs/T610.jpg)
+![Modification](https://raw.githubusercontent.com/Iggnus/cheali-charger-i1/HW_moded_powerSupply/Docs/T610_VFmod.jpg)
 
 - Gyuiri's schematics: [turnigy 2X400](https://drive.google.com/file/d/0B1RXXTatsA1cczlMR184LUVZSkE), [turnigy 2x200](https://drive.google.com/file/d/0B1RXXTatsA1cb1R5NHM3MEtsakE), [turnigy 8150](https://drive.google.com/file/d/0B1RXXTatsA1cbkM2dXFxTldjTUU)
 
@@ -31,7 +31,7 @@ Connect 240k resistor between "BATT+" terminal and pin2 of LM2904 #5 2/1
 
 
 
-___
+--
 
 last changes
 
@@ -41,7 +41,7 @@ last changes
 
 
 	---
-
+	   
 
 
 

@@ -1,13 +1,13 @@
 Welcome to cheali-charger!
 
-Fork of Pawel's firmware (Branch:powerSupply at 01.11.2015) https://github.com/stawel/cheali-charger/tree/powerSupply
+Fork of Pawel's firmware [Branch:powerSupply at 01.11.2015] https://github.com/stawel/cheali-charger/tree/powerSupply
 
 ___
 
 proof of concept - not for every day usage
 
 
-	 THIS FIRMWARE IS FOR HW-MODED CHARGERS ONLY!
+	 **THIS FIRMWARE IS FOR HW-MODED CHARGERS ONLY!**
 	______________________________________________
 
 
@@ -20,7 +20,7 @@ For 150W+ chargers with hardware voltage feedback
 How to modify
 
 ![Thunder T610](Docs/T610.jpg)
-![Thunder T610](Docs/T610_VFmod.jpg)
+![Thunder T610](https://raw.githubusercontent.com/Iggnus/cheali-charger-i1/HW_moded_powerSupply/Docs/T610_VFmod.jpg)
 
 - Gyuiri's schematics: [turnigy 2X400](https://drive.google.com/file/d/0B1RXXTatsA1cczlMR184LUVZSkE), [turnigy 2x200](https://drive.google.com/file/d/0B1RXXTatsA1cb1R5NHM3MEtsakE), [turnigy 8150](https://drive.google.com/file/d/0B1RXXTatsA1cbkM2dXFxTldjTUU)
 

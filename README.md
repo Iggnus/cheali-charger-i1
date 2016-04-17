@@ -8,16 +8,18 @@ proof of concept - not for every day usage
 
 
      THIS FIRMWARE IS FOR HW-MODED CHARGERS ONLY!
-
+	----------------------------------------------
 
 
 For 150W+ chargers with hardware voltage feedback
 
-Calibrate charge current BEFORE modification!
+*Calibrate charge current BEFORE modification!*
 
---
+----
 
-How to modify 
+How to modify
+
+![Thunder T610](Docs/T610.jpg)
 
 Disconnect R127 from "AA" point and "ground" it
 Connect 240k resistor between "BATT+" terminal and pin2 of LM2904 #5 2/1

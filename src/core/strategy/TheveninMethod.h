@@ -22,7 +22,7 @@
 #include "Thevenin.h"
 
 namespace TheveninMethod {
-    bool isBelowMin(AnalogInputs::ValueType I);
+
     void initialize(bool charge);
     bool balance_isComplete(bool isEndVout, AnalogInputs::ValueType I);
 

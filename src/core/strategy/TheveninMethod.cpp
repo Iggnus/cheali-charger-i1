@@ -28,8 +28,6 @@
 //#define ENABLE_DEBUG
 #include "debug.h"
 
-//#include "SerialLog.h"		//ign
-
 namespace TheveninMethod {
 
     enum State {ConstantCurrentBalancing, ConstantCurrent,
@@ -90,9 +88,11 @@ void TheveninMethod::initialize(bool charge)
 
     AnalogInputs::ValueType Vend_per_cell = Balancer::calculatePerCell(Strategy::endV);
 
-    for(uint8_t c = 0; c < Balancer::getCells(); c++) {
-        AnalogInputs::ValueType v = Balancer::getPresumedV(c);
-        tBal_[c].init(v, Vend_per_cell, Strategy::minI, charge);
+    for(uint8_t c = 0; c < MAX_BANANCE_CELLS; c++) {
+        if(Balancer::connectedCells & (1<<c)) {
+            AnalogInputs::ValueType v = Balancer::getPresumedV(c);
+            tBal_[c].init(v, Vend_per_cell, Strategy::minI, charge);
+        }
     }
 
     state_ = ConstantCurrentBalancing;
@@ -127,10 +127,6 @@ bool TheveninMethod::balance_isComplete(bool isEndVout, AnalogInputs::ValueType 
     }
 
     if(I <= getMinIwithBalancer() && isEndVout && state_ == ConstantVoltageBalancing) {
-	
-//SerialLog::printString("TM::balance_isComplete"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
-//SerialLog::printNL();  //ign
-
         if(fullCount_++ >= 10) {
             return true;
         }
@@ -161,10 +157,6 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
 
         LogDebug("newI=", newI_);
 
-//SerialLog::printString("TM "); SerialLog::printUInt(I); SerialLog::printD(); SerialLog::printUInt(newI_);  //ign
-//SerialLog::printNL();  //ign
-
-
         if(newI_ < I) {
             //low pass filter
             //static assert: low pass filter overflow
@@ -173,11 +165,7 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
             newI_ = (newI_ + I)/2;
         }
 
-//SerialLog::printUInt(newI_); SerialLog::printD();  //ign
-
         newI_ = normalizeI(newI_, I);
-
-//SerialLog::printUInt(newI_); SerialLog::printNL();  //ign
 
         switch(state_) {
         case ConstantCurrentBalancing:
@@ -219,8 +207,9 @@ void TheveninMethod::calculateRthVth(AnalogInputs::ValueType I)
 {
     tVout_.calculateRthVth(AnalogInputs::getVbattery(),I);
 
-    for(uint8_t c = 0; c < Balancer::getCells(); c++) {
-        tBal_[c].calculateRthVth(Balancer::getPresumedV(c),I);
+    for(uint8_t c = 0; c < MAX_BANANCE_CELLS; c++) {
+        if(Balancer::connectedCells & (1<<c))
+            tBal_[c].calculateRthVth(Balancer::getPresumedV(c),I);
     }
 }
 
@@ -228,8 +217,10 @@ AnalogInputs::ValueType TheveninMethod::calculateI()
 {
     AnalogInputs::ValueType i = tVout_.calculateI(Strategy::endV);
     AnalogInputs::ValueType Vend_per_cell = Balancer::calculatePerCell(Strategy::endV);
-    for(uint8_t c = 0; c < Balancer::getCells(); c++) {
-        i = min(i, tBal_[c].calculateI(Vend_per_cell));
+    for(uint8_t c = 0; c < MAX_BANANCE_CELLS; c++) {
+        if(Balancer::connectedCells & (1<<c)) {
+            i = min(i, tBal_[c].calculateI(Vend_per_cell));
+        }
     }
     return i;
 }
@@ -265,8 +256,10 @@ void TheveninMethod::storeI(AnalogInputs::ValueType I)
 {
     tVout_.storeLast(AnalogInputs::getVbattery(), I);
 
-    for(uint8_t i = 0; i < Balancer::getCells(); i++) {
-        AnalogInputs::ValueType vi = Balancer::getPresumedV(i);
-        tBal_[i].storeLast(vi, I);
+    for(uint8_t i = 0; i < MAX_BANANCE_CELLS; i++) {
+        if(Balancer::connectedCells & (1<<i)) {
+            AnalogInputs::ValueType vi = Balancer::getPresumedV(i);
+            tBal_[i].storeLast(vi, I);
+        }
     }
 }

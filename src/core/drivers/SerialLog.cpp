@@ -34,9 +34,9 @@
 
 #include "Monitor.h"
 
-namespace adc {
-    void debug();
-}
+void LogDebug_run() __attribute__((weak));
+void LogDebug_run()
+{}
 
 namespace SerialLog {
     enum State { On, Off, Starting };
@@ -92,6 +92,15 @@ void powerOn()
     if(settings.UART == Settings::Disabled)
         return;
 
+#ifdef ENABLE_EXT_TEMP_AND_UART_COMMON_OUTPUT
+    if(ProgramData::battery.enable_externT)
+#ifdef ENABLE_TX_HW_SERIAL
+        if(settings.UARToutput == Settings::Software)
+#endif
+            return;
+#endif
+
+
     serialBegin();
 
     state = Starting;
@@ -122,6 +131,14 @@ void send()
     sendTime();
 }
 
+void flush()
+{
+    if(state == Off)
+        return;
+    Serial::flush();
+}
+
+
 void doIdle()
 {
     static uint16_t analogCount;
@@ -134,7 +151,8 @@ void doIdle()
             send();
         }
     }
-    adc::debug();
+    //TODO: remove
+    LogDebug_run();
 }
 
 #else //ENABLE_SERIAL_LOG
@@ -147,6 +165,7 @@ void powerOn(){}
 void powerOff(){}
 void send(){}
 void doIdle(){}
+void flush(){}
 
 
 #endif

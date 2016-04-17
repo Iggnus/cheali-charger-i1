@@ -30,9 +30,6 @@
 #include "PolarityCheck.h"
 #include "ScreenStartInfo.h"
 
-#include "ProgramDataMenu.h"
-//#include "SerialLog.h"    //ign
-
 namespace Screen {
 namespace StartInfo {
 
@@ -49,7 +46,8 @@ namespace StartInfo {
     void printVoltageString(int8_t dig)
     {
         uint16_t voltage = ProgramData::getDefaultVoltage();
-        if(ProgramData::battery.type == ProgramData::Unknown) {
+        if(ProgramData::battery.type == ProgramData::Unknown || ProgramData::battery.type == ProgramData::LED) {
+            voltage = ProgramData::getVoltage(ProgramData::VCharge);
             lcdPrintVoltage(voltage, dig);
         } else {
             uint8_t cells = ProgramData::battery.cells;
@@ -74,32 +72,13 @@ namespace StartInfo {
 
 void Screen::StartInfo::displayStartInfo()
 {
-//SerialLog::printString("programType "); SerialLog::printUInt(Program::programType); //SerialLog::printD(); SerialLog::printUInt(Rth.uI);  //igntst
-//SerialLog::printNL();  //igntst	
-
-
     lcdSetCursor0_0();
-
-   if(Screen::OnTheFly_ == 2) {      //ign
-    if(Screen::OnTheFly_dir) {
-//      ProgramData::changeVoltage(Screen::OnTheFly_dir);
-      ProgramDataMenu::changeVoltage(Screen::OnTheFly_dir);
-	  ProgramData::check();
-    }
-  }
-
     printBatteryString();
     lcdPrintSpace1();
-  if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
-    lcdPrintSpaces(9);
-  }
-  else
-  {
     printVoltageString(8);
-      lcdPrintSpace1();
-  }
-
+    lcdPrintSpace1();
     printProgram2chars(Program::programType);
+    lcdPrintSpace1();
 
     lcdSetCursor0_1();
     lcdPrintUnsigned(Monitor::getChargeProcent(), 2);
@@ -109,18 +88,21 @@ void Screen::StartInfo::displayStartInfo()
     if(bindex & 1) AnalogInputs::printRealValue(AnalogInputs::Vout, 5);
     else lcdPrintSpaces(5);
 
-    lcdPrintSpace1();
+    lcdPrintChar(' ');
     if(ProgramData::isLiXX()) {
         //display balance port
         if(bindex & 2) AnalogInputs::printRealValue(AnalogInputs::Vbalancer, 5);
         else lcdPrintSpaces(5);
 
-        if(bindex & 4) lcdPrintDigit(AnalogInputs::getConnectedBalancePorts());
+        if(bindex & 4) lcdPrintDigit(AnalogInputs::getConnectedBalancePortsCount());
         else lcdPrintSpace1();
     } else {
 
-        lcdPrintCharge(ProgramData::battery.capacity, 6);
+        if(ProgramData::battery.type == ProgramData::LED) {
+            lcdPrintCurrent(ProgramData::battery.Ic, 6);
+        } else {
+            lcdPrintCharge(ProgramData::battery.capacity, 6);
+        }
         lcdPrintSpaces();
     }
 }
-

@@ -71,9 +71,9 @@ namespace AnalogInputs {
     uint16_t    deltaCount_;
     ValueType   deltaLastT_;
     uint16_t    deltaStartTimeU16_;
+    bool        enable_deltaVoutMax_;
 
     uint32_t    i_charge_;
-    uint32_t    Eout_;
 
     void _resetAvr();
     void _resetDeltaAvr();
@@ -90,10 +90,12 @@ namespace AnalogInputs {
     uint16_t getFullMeasurementCount()      { return calculationCount_; }
     ValueType getDeltaLastT()               { return deltaLastT_;}
     ValueType getDeltaCount()               { return deltaCount_;}
+    void enableDeltaVoutMax(bool enable)    { enable_deltaVoutMax_ = enable; }
 
     uint16_t getStableCount(Name name)      { return stableCount_[name]; };
     bool isStable(Name name)                { return getStableCount(name) >= STABLE_MIN_VALUE; };
     void setReal(Name name, ValueType real);
+    void setRealBasedOnAvr(AnalogInputs::Name name);
 
     void finalizeDeltaMeasurement();
     void finalizeFullMeasurement();
@@ -138,13 +140,24 @@ void AnalogInputs::setCalibrationPoint(Name name, uint8_t i, const CalibrationPo
     eeprom::write<CalibrationPoint>(&eeprom::data.calibration[name].p[i], x);
 }
 
-uint8_t AnalogInputs::getConnectedBalancePorts()
+uint16_t AnalogInputs::getConnectedBalancePorts()
 {
+    uint16_t ports = 0, port = 1;
     for(uint8_t i=0; i < MAX_BANANCE_CELLS; i++){
-        if(!isConnected(Name(Vb1+i))) return i;
+        if(isConnected(Name(Vb1+i))) {
+            ports |= port;
+        }
+        port <<= 1;
     }
-    return MAX_BANANCE_CELLS;
+    return ports;
 }
+
+uint8_t AnalogInputs::getConnectedBalancePortsCount()
+{
+     return countBits(getConnectedBalancePorts());
+}
+
+
 bool AnalogInputs::isConnected(Name name)
 {
     if(name == Vbalancer) {
@@ -237,7 +250,6 @@ void AnalogInputs::resetAccumulatedMeasurements()
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         i_charge_ = 0;
-		Eout_ = 0;
     }
     resetMeasurement();
     resetDelta();
@@ -247,21 +259,17 @@ void AnalogInputs::resetAccumulatedMeasurements()
     setReal(deltaTextern, 0);
 }
 
-
 void AnalogInputs::reset()
 {
     calculationCount_ = 0;
     resetAccumulatedMeasurements();
-    ANALOG_INPUTS_FOR_ALL(name){
-        real_[name] = 0;
-    }
 }
 
-void AnalogInputs::powerOn(bool enableBatteryOutput, bool rset)
+void AnalogInputs::powerOn(bool enableBatteryOutput)
 {
     if(!on_) {
         hardware::setBatteryOutput(enableBatteryOutput);
-        if(rset) reset();
+        reset();
         on_ = true;
         doFullMeasurement();
     }
@@ -376,21 +384,7 @@ uint16_t AnalogInputs::getCharge()
 
 void AnalogInputs::doSlowInterrupt()
 {
-	static uint8_t etime;
-	if(on_) {
-		i_charge_ += getIout();
-		if(etime++ > 87) {				//ign  Once per 10.015 sec
-			uint32_t E = getIout();
-			E *= getVout();
-			E /= 100;
-			Eout_ += E;
-			setReal(Eout, Eout_/36000);
-
-//			SerialLog::printString("AI::doSlowInterrupt"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
-//			SerialLog::printNL();  //ign
-			etime = 0;
-		}
-	}
+    i_charge_ += getIout();
 }
 
 // finalize Measurement
@@ -404,9 +398,14 @@ void AnalogInputs::intterruptFinalizeMeasurement()
 
 void AnalogInputs::doIdle()
 {
-    if(isPowerOn()) {
-        finalizeFullMeasurement();
-    }
+    finalizeFullMeasurement();
+}
+
+void AnalogInputs::setRealBasedOnAvr(AnalogInputs::Name name)
+{
+    avrAdc_[name] = i_avrSum_[name] / ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT;
+    ValueType real = calibrateValue(name, avrAdc_[name]);
+    setReal(name, real);
 }
 
 void AnalogInputs::finalizeFullMeasurement()
@@ -418,20 +417,23 @@ void AnalogInputs::finalizeFullMeasurement()
 
     if(avrCount == 0) {
         if(!ignoreLastResult_) {
-            calculationCount_++;
+            if(isPowerOn()) {
+                calculationCount_++;
 
-            i_deltaAvrSumVoutPlus_    += i_avrSum_[Vout_plus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
-            i_deltaAvrSumVoutMinus_   += i_avrSum_[Vout_minus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
-            i_deltaAvrSumTextern_     += i_avrSum_[Textern] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
-            i_deltaAvrCount_ ++;
-            finalizeDeltaMeasurement();
+                i_deltaAvrSumVoutPlus_    += i_avrSum_[Vout_plus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
+                i_deltaAvrSumVoutMinus_   += i_avrSum_[Vout_minus_pin] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
+                i_deltaAvrSumTextern_     += i_avrSum_[Textern] >> ANALOG_INPUTS_ADC_DELTA_SHIFT;
+                i_deltaAvrCount_ ++;
+                finalizeDeltaMeasurement();
 
-            ANALOG_INPUTS_FOR_ALL_PHY(name) {
-                avrAdc_[name] = i_avrSum_[name] / ANALOG_INPUTS_ADC_MEASUREMENTS_COUNT;
-                ValueType real = calibrateValue(name, avrAdc_[name]);
-                setReal(name, real);
+                ANALOG_INPUTS_FOR_ALL_PHY(name) {
+                    setRealBasedOnAvr(name);
+                }
+                finalizeFullVirtualMeasurement();
+            } else {
+                //we need internal temperature all the time to control the fan
+                setRealBasedOnAvr(AnalogInputs::Tintern);
             }
-            finalizeFullVirtualMeasurement();
         }
         _resetAvr();
     }
@@ -471,8 +473,9 @@ void AnalogInputs::finalizeDeltaMeasurement()
             real = VoutPlus - VoutMinus;
 
         old = getRealValue(deltaVoutMax);
-        if(real >= old)
+        if(real >= old || (!enable_deltaVoutMax_)) {
             setReal(deltaVoutMax, real);
+        }
         setReal(deltaVout, real - old);
 
         //calculate deltaTextern
@@ -520,10 +523,11 @@ void AnalogInputs::finalizeFullVirtualMeasurement()
     }
 #endif
 
-    uint8_t ports = getConnectedBalancePorts();
+    uint16_t connectedCells = getConnectedBalancePorts();
 
-    for(uint8_t i=0; i < ports; i++) {
-        balancer += getRealValue(Name(Vb1+i));
+    for(uint8_t i = 0; i < MAX_BANANCE_CELLS; i++) {
+        if(connectedCells & (1<<i))
+            balancer += getRealValue(Name(Vb1+i));
     }
 
     setReal(Vbalancer, balancer);
@@ -531,13 +535,13 @@ void AnalogInputs::finalizeFullVirtualMeasurement()
     if(balancer == 0 || absDiff(out, balancer) > ANALOG_VOLT(3.000)) {
         //balancer not connected or big error in calibration
         obInfo = Vout;
-        ports = 0;
+        connectedCells = 0;
     } else {
         out = balancer;
         obInfo = Vbalancer;
     }
     setReal(VoutBalancer, out);
-    setReal(VbalanceInfo, ports);
+    setReal(VbalanceInfo, connectedCells);
     setReal(VobInfo, obInfo);
 
     AnalogInputs::ValueType IoutValue = 0;
@@ -557,13 +561,10 @@ void AnalogInputs::finalizeFullVirtualMeasurement()
     setReal(Pout, P);
 
     //TODO: rewrite
-//    uint32_t E = CoutValue;
-//    E *= out;
-//    E /= 10000;
-//    setReal(Eout, E);
-
-//SerialLog::printString("setReal"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
-//SerialLog::printNL();  //ign
+    uint32_t E = CoutValue;
+    E *= out;
+    E /= 10000;
+    setReal(Eout, E);
 }
 
 void AnalogInputs::setReal(Name name, ValueType real)

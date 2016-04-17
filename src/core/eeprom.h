@@ -15,10 +15,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifndef EEPROM_H_
+#define EEPROM_H_
 
 #include "AnalogInputs.h"
 #include "ProgramData.h"
 #include "Settings.h"
+#include "cpu.h"
 
 #define EEPROM_MAGIC_STRING_LEN 4
 
@@ -40,7 +43,7 @@ namespace eeprom {
         uint16_t calibrationCRC;
 
         ProgramData::Battery battery[MAX_PROGRAMS];
-        uint16_t programDataCRC;
+        uint16_t batteryCRC;
 
         Settings settings;
         uint16_t settingsCRC;
@@ -68,3 +71,5 @@ namespace eeprom {
 
 
 }
+#endif //EEPROM_H_
+

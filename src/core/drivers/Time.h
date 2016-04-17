@@ -36,11 +36,6 @@ namespace Time {
     void delayDoIdle(uint16_t ms);
 
     inline uint16_t diffU16(uint16_t start, uint16_t end) {
-//	if (start > end) {
-//		start = 65535 - start;
-//		return end + start;
-//	}
-//	else return end - start;
         return end - start;
     }
 

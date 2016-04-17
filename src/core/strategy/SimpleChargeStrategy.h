@@ -22,9 +22,9 @@
 #include "Strategy.h"
 
 namespace SimpleChargeStrategy {
-    void powerOn();
-    void powerOff();
-    void calculateThevenin();
+
+    extern const Strategy::VTable vtable;
+
 };
 
 #endif /* SIMPLECHARGESTRATEGY_H_ */

@@ -28,8 +28,8 @@
 
 namespace ProgramData {
 
-    enum BatteryClass {ClassNiXX, ClassPb, ClassLiXX, ClassNiZn, LAST_BATTERY_CLASS};
-    enum BatteryType {None, Unknown, NiCd, NiMH, Pb, Life, Lilo, Lipo, Li430, Li435, NiZn, LAST_BATTERY_TYPE};
+    enum BatteryClass {ClassNiXX, ClassPb, ClassLiXX, ClassNiZn, ClassUnknown, ClassLED, LAST_BATTERY_CLASS};
+    enum BatteryType {None, NiCd, NiMH, Pb, Life, Lilo, Lipo, Li430, Li435, NiZn, Unknown, LED, LAST_BATTERY_TYPE};
     enum VoltageType {VIdle, VCharge, VDischarge, VStorage, ValidEmpty, LAST_VOLTAGE_TYPE};
 
 
@@ -52,17 +52,19 @@ namespace ProgramData {
         uint16_t enable_externT;
         AnalogInputs::ValueType externTCO;
 
-        uint16_t adaptiveDis;
+        uint16_t enable_adaptiveDischarge;
         uint16_t DCRestTime;
         uint16_t capCutoff;
 
         union {
             struct { //LiXX
+                uint16_t Vs_per_cell; // storage
                 uint16_t balancerError;
             };
             struct { //NiXX
                 uint16_t enable_deltaV;
                 int16_t deltaV;
+                uint16_t deltaVIgnoreTime;
                 uint16_t deltaT;
                 uint16_t DCcycles;
             };
@@ -72,12 +74,12 @@ namespace ProgramData {
     } CHEALI_EEPROM_PACKED;
 
     extern Battery battery;
-    extern uint8_t volt_type;		//ign
     extern const char * const batteryString[];
+    extern const BatteryClass batteryClassMap[];
 
     uint16_t getDefaultVoltagePerCell(VoltageType type = VIdle);
     uint16_t getDefaultVoltage(VoltageType type = VIdle);
-    uint16_t getVoltage2(VoltageType type = VIdle);
+    uint16_t getVoltage(VoltageType type = VIdle);
     uint16_t getCapacityLimit();
     inline uint16_t getTimeLimit() {return battery.time; }
 
@@ -97,6 +99,7 @@ namespace ProgramData {
 
     BatteryClass getBatteryClass();
 
+    inline bool isPowerSupply() { return getBatteryClass() == ClassLED; };
     inline bool isLiXX() { return getBatteryClass() == ClassLiXX; };
     inline bool isNiXX() { return getBatteryClass() == ClassNiXX; };
     inline bool isPb() { return getBatteryClass() == ClassPb; };
@@ -108,12 +111,6 @@ namespace ProgramData {
     void printProgramData(uint8_t index);
 
     void restoreDefault();
-	
-	void changeIc(int direction);
-	void changeId(int direction);
-	void changeTime(int direction);
-//void changeVoltage(int direction);
-
 };
 
 #endif /* PROGRAMDATA_H_ */

@@ -24,26 +24,45 @@
 #include "memory.h"
 #include "Settings.h"
 
+#define DELTA_COUNTS_PER_MINUTE (60/(ANALOG_INPUTS_DELTA_TIME_MILISECONDS/1000))
+
 namespace DeltaChargeStrategy {
+
+    void powerOn();
+    void powerOff();
+    Strategy::statusType doStrategy();
 
     const Strategy::VTable vtable PROGMEM = {
         powerOn,
-        SimpleChargeStrategy::powerOff,
+        powerOff,
         doStrategy
     };
+
+    void calculateThevenin() {
+        if(AnalogInputs::isOutStable()) TheveninMethod::calculateRthVth(SMPS::getIout());
+    }
+
 }
 
 void DeltaChargeStrategy::powerOn()
 {
-    SimpleChargeStrategy::powerOn();
+    SMPS::powerOn();
+    TheveninMethod::initialize(true);
+    SMPS::trySetIout(Strategy::minI);
 }
+
+void DeltaChargeStrategy::powerOff()
+{
+    SMPS::powerOff();
+}
+
 
 Strategy::statusType DeltaChargeStrategy::doStrategy()
 {
-    SimpleChargeStrategy::calculateThevenin();
+    calculateThevenin();
     AnalogInputs::ValueType Vout = AnalogInputs::getVbattery();
 
-    if(ProgramData::getVoltage2(ProgramData::VDischarge) < Vout) {
+    if(ProgramData::getVoltage(ProgramData::VDischarge) < Vout) {
         SMPS::trySetIout(Strategy::maxI);
     }
 
@@ -52,16 +71,10 @@ Strategy::statusType DeltaChargeStrategy::doStrategy()
         return Strategy::COMPLETE;
     }
 
-    if(AnalogInputs::getDeltaCount() <= 1)
+    //we don't have enough data to compute delta values (we need at least 2)
+    if(AnalogInputs::getDeltaCount() < 2)
         return Strategy::RUNNING;
 
-    if(ProgramData::battery.enable_deltaV) {
-        int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaVout);
-        if(x < ProgramData::getDeltaVLimit()) {
-            Program::stopReason = string_batteryVoltageReachedDeltaVLimit;
-            return Strategy::COMPLETE;
-        }
-    }
     if(ProgramData::battery.enable_externT) {
         int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaTextern);
         if(x > ProgramData::getDeltaTLimit()) {
@@ -70,7 +83,21 @@ Strategy::statusType DeltaChargeStrategy::doStrategy()
         }
     }
 
+    //ignore few first -dV values until output voltage is stable
+    bool dontIgnore = AnalogInputs::getDeltaCount() >= ProgramData::battery.deltaVIgnoreTime * DELTA_COUNTS_PER_MINUTE;
+    AnalogInputs::enableDeltaVoutMax(dontIgnore);
+    if(dontIgnore) {
+        if(ProgramData::battery.enable_deltaV) {
+            int16_t x = AnalogInputs::getRealValue(AnalogInputs::deltaVout);
+            if(x < ProgramData::getDeltaVLimit()) {
+                Program::stopReason = string_batteryVoltageReachedDeltaVLimit;
+                return Strategy::COMPLETE;
+            }
+        }
+    }
+
     return Strategy::RUNNING;
 }
+
 
 

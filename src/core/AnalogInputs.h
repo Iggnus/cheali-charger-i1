@@ -129,8 +129,10 @@ namespace AnalogInputs {
     ValueType getDeltaLastT();
     ValueType getDeltaCount();
     uint16_t getCharge();
+    void enableDeltaVoutMax(bool enable);
 
-    uint8_t getConnectedBalancePorts();
+    uint16_t getConnectedBalancePorts();
+    uint8_t getConnectedBalancePortsCount();
 
     uint16_t getFullMeasurementCount();
     uint16_t getStableCount(Name name);
@@ -148,7 +150,7 @@ namespace AnalogInputs {
 
     void resetMeasurement();
     void resetAccumulatedMeasurements();
-    void powerOn(bool enableBatteryOutput = true, bool rset = true);
+    void powerOn(bool enableBatteryOutput = true);
     void powerOff();
 
 

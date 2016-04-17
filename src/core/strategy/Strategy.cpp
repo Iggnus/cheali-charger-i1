@@ -26,11 +26,6 @@
 
 #define STRATEGY_DISABLE_OUTPUT_AFTER_SECONDS (3*60)
 
-#include "ScreenMethods.h"  //ign
-#include "IO.h"        //ign
-//#include "Program.h"    //ign
-//#include "SerialLog.h"    //ign
-
 namespace Strategy {
 
     const VTable * strategy;
@@ -42,20 +37,14 @@ namespace Strategy {
     bool doBalance;
 
     void setVI(ProgramData::VoltageType vt, bool charge) {
-		if(vt != ProgramData::VIdle) endV = ProgramData::getVoltage2(vt);
+        endV = ProgramData::getVoltage(vt);
 
         if(charge) {
             maxI = ProgramData::battery.Ic;
             minI = ProgramData::battery.minIc;
-//            if(vt == ProgramData::VCharge && ProgramData::currentProgramData.isLiXX()) {
-//                endV += settings.overCharge_LiXX * ProgramData::currentProgramData.battery.cells;
-//            }
         } else {
             maxI = ProgramData::battery.Id;
             minI = ProgramData::battery.minId;
-//            if(vt == ProgramData::VDischarge && ProgramData::currentProgramData.isLiXX()) {
-//                endV += settings.overDischarge_LiXX * ProgramData::currentProgramData.battery.cells;
-//            }
         }
 
     }
@@ -82,34 +71,16 @@ namespace Strategy {
             if(Time::diffU16(time, Time::getSecondsU16()) > STRATEGY_DISABLE_OUTPUT_AFTER_SECONDS) {
                 AnalogInputs::powerOff();
             }
-        } while(Keyboard::getPressedWithSpeed() == BUTTON_NONE);
+        } while(Keyboard::getPressedWithDelay() == BUTTON_NONE);
 
         Buzzer::soundOff();
     }
 
     void chargingComplete() {
         chargingEnd();
-#ifndef FREEZE_COMPLETED
         Screen::displayScreenProgramCompleted();
         Buzzer::soundProgramComplete();
         waitButtonOrDisableOutput();
-#else
-    uint16_t time = Time::getSecondsU16();
-        Buzzer::soundProgramComplete();
-    AnalogInputs::powerOff();
-    IO::digitalWrite(OUTPUT_DISABLE_PIN, false);
-    do {
-      Screen::displayScreenProgramCompleted();
-      if(waitButtonPressedLimTime()) break;
-      Screen::Methods::displayFirstScreen();
-      if(waitButtonPressedLimTime()) break;
-            if(Time::diffU16(time, Time::getSecondsU16()) > STRATEGY_DISABLE_OUTPUT_AFTER_SECONDS) {
-        IO::digitalWrite(OUTPUT_DISABLE_PIN, true);
-            }
-    } while(true);
-    Buzzer::soundOff();
-    AnalogInputs::powerOn(true, false);
-#endif
     }
 
     void chargingMonitorError() {
@@ -149,7 +120,7 @@ namespace Strategy {
         Strategy::statusType status = Strategy::RUNNING;
         strategyPowerOn();
         do {
-            Screen::keyboardButton =  Keyboard::getPressedWithSpeed();
+            Screen::keyboardButton =  Keyboard::getPressedWithDelay();
             Screen::doStrategy();
 
             if(run) {
@@ -162,17 +133,12 @@ namespace Strategy {
                     run = analizeStrategyStatus(status);
                 }
             }
-            if(!run && exitImmediately && status != Strategy::ERROR) {
-//        if(Program::stopReason != Monitor::string_batteryDisconnected) break;
-//        if(status != Strategy::ERROR) break;
-        break;
-      }
-//    } while(Screen::keyboardButton != BUTTON_STOP);
-    } while(Screen::keyboardButton != BUTTON_STOP || !Keyboard::getSpeed());    //ign
+            if(!run && exitImmediately && status != Strategy::ERROR)
+                break;
+        } while(Screen::keyboardButton != BUTTON_STOP);
 
         strategyPowerOff();
         return status;
     }
 } // namespace Strategy
-
 

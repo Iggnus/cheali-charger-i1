@@ -22,6 +22,7 @@ namespace SerialLog {
     void powerOn();
     void doIdle();
     void powerOff();
+    void flush();
 
     void printD();           //ign
     void printString(const char *s);

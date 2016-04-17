@@ -30,8 +30,6 @@
 #include "PolarityCheck.h"
 #include "ScreenCycle.h"
 
-//#include "SerialLog.h"    //ign
-
 //TODO: remove constant: 10 (move to #define)
 
 namespace Screen { namespace Cycle {
@@ -45,24 +43,11 @@ namespace Screen { namespace Cycle {
 
 void Screen::Cycle::displayCycles()
 {
-    static uint8_t c;
-  uint8_t time = blink.blinkTime_/4;    //ign_time
+    uint8_t c, time = blink.blinkTime_/8;
     uint8_t all_scr = ProgramDCcycle::currentCycle/2 + 1;
+    c = time % all_scr;
     lcdSetCursor0_0();
-#ifdef MANUAL_HISTORY
-   if(Screen::OnTheFly_ == 2) {
-      if(keyboardButton == BUTTON_DEC && c) c--;
-      else if(keyboardButton == BUTTON_INC && c < ProgramDCcycle::currentCycle/2) c++;
-      else if(c > ProgramDCcycle::currentCycle/2) c = ProgramDCcycle::currentCycle/2;
-  }
-  else c = time % all_scr;
-#else
-  c = time % all_scr;
-#endif
-
-  if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) lcdPrintSpaces(1);
-  else lcdPrintUnsigned(c+1, 1);
-
+    lcdPrintUnsigned(c+1, 1);
     lcdPrintChar(SCREEN_EMPTY_CELL_CHAR);
     lcdPrintTime(cyclesHistoryTime[c*2]);
     lcdPrintSpace1();

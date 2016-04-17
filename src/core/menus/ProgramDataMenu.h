@@ -20,7 +20,6 @@
 
 namespace ProgramDataMenu {
     void run();
-	void changeVoltage(int dir);
 };
 
 

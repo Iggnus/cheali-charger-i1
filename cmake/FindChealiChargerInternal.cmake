@@ -1,6 +1,12 @@
 
 MESSAGE(STATUS "setting up cheali-charger MACROS.")
 
+MACRO(CHEALI_ADD DEST FILES)
+    include_directories(${CMAKE_CURRENT_LIST_DIR})
+    CHEALI_FIND("${DEST}" "${FILES}" "${CMAKE_CURRENT_LIST_DIR}")
+#    message("CMAKE_CURRENT_LIST_DIR ${CMAKE_CURRENT_LIST_DIR}")
+ENDMACRO(CHEALI_ADD)
+
 
 MACRO(CHEALI_FIND DEST FILES PATHS)
     foreach (SOURCE ${FILES})
@@ -22,17 +28,18 @@ ENDMACRO(CHEALI_HARDWARE)
 MACRO(CHEALI_CPU CPU)
     SET(TARGET_CPU ${CPU})
     message(STATUS "cpu: ${TARGET_CPU}" )
-    include(${CMAKE_SOURCE_DIR}/src/${TARGET_CPU}/cpu/cpu.cmake)
+    include(${CMAKE_SOURCE_DIR}/src/hardware/${TARGET_CPU}/cpu/cpu.cmake)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 ENDMACRO(CHEALI_CPU)
 
 MACRO(CHEALI_GENERIC_CHARGER CHARGER)
     SET(TARGET_GENERIC_CHARGER ${CHARGER})
     message(STATUS "generic charger: ${TARGET_GENERIC_CHARGER}" )
-    include(${CMAKE_SOURCE_DIR}/src/${TARGET_CPU}/${TARGET_GENERIC_CHARGER}/generic.cmake)
+    include(${CMAKE_SOURCE_DIR}/src/hardware/${TARGET_CPU}/generic/${TARGET_GENERIC_CHARGER}/generic.cmake)
 
-#    set(name "${CMAKE_PROJECT_NAME}-${hardware}")
-    set(name "${hardware}")
+    set(name "${CMAKE_PROJECT_NAME}-${hardware}")
+#    hexfile short name
+#    set(name "${hardware}")
     set(execName "${name}_${cheali-charger-version}-${cheali-charger-buildnumber}_${TARGET_CPU}")
     set(sizeName "${name}")
 
@@ -51,6 +58,21 @@ ENDMACRO(CHEALI_GENERIC_CHARGER)
 
 MACRO(CHEALI_GENERATE_ARM_EXEC)
     add_executable(${execName} ${ALL_SOURCE_FILES})
+
+    add_custom_command(
+        TARGET ${execName}
+        POST_BUILD
+        COMMAND ${TOOLCHAIN}-objcopy -O ihex $<TARGET_FILE:${execName}> $<TARGET_FILE:${execName}>.hex)
+
+    add_custom_command(
+        TARGET ${execName}
+        POST_BUILD
+        COMMAND ${TOOLCHAIN}-objcopy -O binary $<TARGET_FILE:${execName}> $<TARGET_FILE:${execName}>.bin)
+
+    add_custom_target(${execName}.size ALL
+        COMMAND ${TOOLCHAIN}-size $<TARGET_FILE:${execName}>
+        DEPENDS ${execName})
+
 ENDMACRO(CHEALI_GENERATE_ARM_EXEC)
 
 

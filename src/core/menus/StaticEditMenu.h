@@ -22,6 +22,7 @@
 #include "EditMenu.h"
 #include "cprintf.h"
 
+
 #define CE_STEP_TYPE_SMART  0x7fff
 #define CE_STEP_TYPE_METHOD 0x7ffe
 
@@ -55,11 +56,12 @@ public:
 
 public:
 	StaticEditMenu(const StaticEditData * staticEditData, const EditCallBack callback = NULL)
-			: EditMenu(NULL), staticEditData(staticEditData), editCallback(callback) {};
+			: EditMenu(NULL), staticEditData(staticEditData), selector(Always), editCallback(callback) {};
     virtual void printItem(uint8_t item);
     virtual void editItem(uint8_t item, uint8_t key);
 
     int16_t * getEditAddress(uint8_t item);
+    uint16_t getEnableCondition(uint8_t item);
 
     void setSelector(uint16_t selector);
 

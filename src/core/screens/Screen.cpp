@@ -32,27 +32,19 @@
 
 #include "ScreenPages.h"
 
-#include "IO.h"		//ign
-//#include "SerialLog.h"    //ign
-
 namespace Screen {
 
     Blink blink;
-	
-uint8_t OnTheFly_;
-int8_t OnTheFly_dir;
-bool OnTheFly_blink;
-bool OnTheFly_blink2;
 
     uint8_t pageNr_;
     uint8_t keyboardButton;
 
     //see PAGE_PROGRAM
     //see PAGE_BATTERY
-    STATIC_ASSERT(ProgramData::LAST_BATTERY_CLASS == 4 && Program::LAST_PROGRAM_TYPE == 9 + 2);
+    STATIC_ASSERT_MSG(ProgramData::LAST_BATTERY_CLASS == 6 && Program::LAST_PROGRAM_TYPE == 9 + 2, "see ScreenPages.h");
 
-    uint16_t getConditions() {
-        uint16_t c = 0;
+    uint32_t getConditions() {
+        uint32_t c = 0;
         if(Program::programState == Program::Info)
             c += PAGE_START_INFO;
         if(Monitor::isBalancePortConnected)
@@ -65,7 +57,7 @@ bool OnTheFly_blink2;
     VoidMethod getPage(uint8_t page) {
         uint8_t i = 0;
         Pages::PageInfo info;
-        uint16_t condition = getConditions();
+        uint32_t condition = getConditions();
         bool ok;
         page++;
         do {
@@ -97,40 +89,19 @@ void Screen::doStrategy()
     if(!PolarityCheck::runReversedPolarityInfo()) {
         Screen::displayPage();
     }
-//            key =  Keyboard::getPressedWithSpeed();
-	if(keyboardButton) {OnTheFly_blink = OnTheFly_blink2 = true;}
-	else if(OnTheFly_blink2) OnTheFly_blink2 = false;
-	else OnTheFly_blink = !OnTheFly_blink;
 
-	if(keyboardButton == BUTTON_START) {
-		if(Keyboard::getSpeed() || OnTheFly_ >= 2) OnTheFly_ = 0;
-		else OnTheFly_ = 1;
-	}
-	else if(OnTheFly_ == 1 && keyboardButton == BUTTON_NONE) OnTheFly_++;
-
-	if(keyboardButton == BUTTON_INC) OnTheFly_dir = 1;
-	else if(keyboardButton == BUTTON_DEC) OnTheFly_dir = -1;
-//	if(keyboardButton == BUTTON_INC) OnTheFly_dir = keyboardButton;
-//	else if(keyboardButton == BUTTON_DEC) OnTheFly_dir = keyboardButton;
-	else OnTheFly_dir = 0;			
-
-	if(OnTheFly_ < 2) {
-		if(keyboardButton == BUTTON_INC && getPage(pageNr_ + 1) != NULL ) {
-//				if(status == Strategy::COMPLETE) {hardware::setBatteryOutput(true); }  // ADD THIS LINE TO TURN ON THE FAN
-
+    if(keyboardButton == BUTTON_INC && getPage(pageNr_ + 1) != NULL ) {
 #ifdef ENABLE_SCREEN_ANIMATION
-			Screen::displayAnimation();
+        Screen::displayAnimation();
 #endif
-			pageNr_++;
-		}
-		if(keyboardButton == BUTTON_DEC && pageNr_ > 0) {
+        pageNr_++;
+    }
+    if(keyboardButton == BUTTON_DEC && pageNr_ > 0) {
 #ifdef ENABLE_SCREEN_ANIMATION
-			Screen::displayAnimation();
+        Screen::displayAnimation();
 #endif
-			pageNr_--;
-		}
-	}
-
+        pageNr_--;
+    }
 }
 
 void Screen::powerOn()

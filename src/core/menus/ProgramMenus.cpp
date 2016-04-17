@@ -22,6 +22,8 @@
 #include "eeprom.h"
 #include "ProgramDataMenu.h"
 
+// Program selection depending on the battery type
+
 namespace ProgramMenus {
 
     const Program::ProgramType programNoneMenu[] PROGMEM = {
@@ -73,6 +75,10 @@ namespace ProgramMenus {
             Program::EditBattery,
     };
 
+    const Program::ProgramType programLEDMenu[] PROGMEM = {
+            Program::Charge,
+            Program::EditBattery,
+    };
 
 // ProgramType -> strings
     const char * const programMenus_strings[] PROGMEM = {
@@ -116,8 +122,11 @@ namespace ProgramMenus {
     ProgramTypeMenu selectNiXXMenu(programNiXXMenu);
     ProgramTypeMenu selectNiZnMenu(programNiZnMenu);
     ProgramTypeMenu selectPbMenu(programPbMenu);
+    ProgramTypeMenu selectLEDMenu(programLEDMenu);
 
     ProgramTypeMenu * getSelectProgramMenu() {
+        STATIC_ASSERT(ProgramData::LAST_BATTERY_CLASS == 6);
+
         ProgramData::BatteryClass bc = ProgramData::getBatteryClass();
         if(ProgramData::battery.type == ProgramData::None)
             return &selectNoneMenu;
@@ -127,13 +136,14 @@ namespace ProgramMenus {
             return &selectLiXXMenu;
         if(bc == ProgramData::ClassNiXX)
             return &selectNiXXMenu;
+        if(bc == ProgramData::ClassLED)
+            return &selectLEDMenu;
         else return &selectPbMenu;
     }
 }
 
 void ProgramMenus::selectProgram(int index)
 {
-//Screen::OnTheFly_ = 0;           //ign
     ProgramData::loadProgramData(index);
     ProgramTypeMenu * selectPrograms = getSelectProgramMenu();
     int8_t menuIndex;
@@ -142,7 +152,6 @@ void ProgramMenus::selectProgram(int index)
         if(menuIndex >= 0)  {
             Program::ProgramType prog = selectPrograms->getProgramType(menuIndex);
             if(prog == Program::EditBattery) {
-				ProgramData::loadProgramData(index);	//ign	Reset OnTheFly changes
                 ProgramDataMenu::run();
                 ProgramData::saveProgramData(index);
                 selectPrograms = getSelectProgramMenu();

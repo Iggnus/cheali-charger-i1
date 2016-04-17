@@ -22,6 +22,7 @@
 #include "LcdPrint.h"
 #include "Screen.h"
 #include "Settings.h"
+#include "SMPS_PID.h"
 
 #ifndef SMPS_MAX_CURRENT_CHANGE
 #define SMPS_MAX_CURRENT_CHANGE     ANALOG_AMP(0.200)
@@ -30,17 +31,16 @@
 #define SMPS_MAX_CURRENT_CHANGE_dM  ((AnalogInputs::ValueType)(SMPS_MAX_CURRENT_CHANGE*0.7))
 
 namespace SMPS {
-    STATE state_;
-    uint16_t value_;
+    bool on_ = false;
+    uint16_t IoutPWM_;
     AnalogInputs::ValueType IoutSet_;
 
-    STATE getState()    { return state_; }
-    bool isPowerOn()    { return getState() == CHARGING; }
-    bool isWorking()    { return value_ != 0; }
-    uint16_t getValue() { return value_; }
+    bool isPowerOn()    { return on_; }
+    bool isWorking()    { return IoutPWM_ != 0; }
+    uint16_t getIoutPWM() { return IoutPWM_; }
     AnalogInputs::ValueType getIout() { return IoutSet_; }
 
-    void setValue(uint16_t value);
+    void setIoutPWM(uint16_t IoutPWM);
 
     AnalogInputs::ValueType getMaxIout()
     {
@@ -61,7 +61,6 @@ namespace SMPS {
         }
 #endif
 
-//		ANALOG_WATT(2.000);		//igntst
         AnalogInputs::ValueType i = AnalogInputs::evalI(MAX_CHARGE_P, v);
         if(i > MAX_CHARGE_I)
             i = MAX_CHARGE_I;
@@ -71,20 +70,33 @@ namespace SMPS {
 
 void SMPS::initialize()
 {
-    value_ = 0;
+    IoutPWM_ = 0;
     IoutSet_ = 0;
-    setValue(0);
-    powerOff(CHARGING_COMPLETE);
+    setIoutPWM(0);
+    on_ = true;
+    powerOff();
 }
 
 
-void SMPS::setValue(uint16_t value)
+void SMPS::setIoutPWM(uint16_t IoutPWM)
 {
-    if(value > SMPS_UPPERBOUND_VALUE)
-        value = SMPS_UPPERBOUND_VALUE;
-    value_ = value;
+    if(IoutPWM > SMPS_MAX_I_OUT_PWM)
+        IoutPWM = SMPS_MAX_I_OUT_PWM;
+    IoutPWM_ = IoutPWM;
 
-    hardware::setChargerValue(value_);
+    SMPS_PID::setIoutPWM(IoutPWM_);
+    AnalogInputs::resetMeasurement();
+}
+
+void SMPS::setVout(AnalogInputs::ValueType V)
+{
+#if CHEALI_CHARGER_ARCHITECTURE_GENERIC == 2		//150W+ chargers
+    SMPS_PID::setVoutPWM(V);		//ign
+#else
+    uint16_t adcVout = AnalogInputs::reverseCalibrateValue(AnalogInputs::Vout_plus_pin, V);
+    SMPS_PID::setVoutPWM(adcVout);
+#endif
+
     AnalogInputs::resetMeasurement();
 }
 
@@ -103,8 +115,12 @@ void SMPS::trySetIout(AnalogInputs::ValueType I)
 
     if(IoutSet_ == I) return;
     IoutSet_ = I;
+#if CHEALI_CHARGER_ARCHITECTURE_GENERIC == 2		//150W+ chargers
+    setIoutPWM(I);		//ign
+#else
     uint16_t value = AnalogInputs::reverseCalibrateValue(AnalogInputs::IsmpsSet, I);
-    setValue(value);
+    setIoutPWM(value);
+#endif
 }
 
 void SMPS::powerOn()
@@ -112,23 +128,24 @@ void SMPS::powerOn()
     if(isPowerOn())
         return;
     //reset rising value
-    value_ = 0;
+    IoutPWM_ = 0;
     IoutSet_ = 0;
-    setValue(0);
-    hardware::setChargerOutput(true);
-    state_ = CHARGING;
+    setIoutPWM(0);
+SMPS::setVout(Strategy::endV);              //ign
+    SMPS_PID::powerOn();
+    on_ = true;
 }
 
 
-void SMPS::powerOff(STATE reason)
+void SMPS::powerOff()
 {
-    if(!isPowerOn() || reason == CHARGING)
+    if(!isPowerOn())
         return;
 
-    setValue(0);
+    setIoutPWM(0);
     //reset rising value
-    value_ = 0;
+    IoutPWM_ = 0;
     IoutSet_ = 0;
-    hardware::setChargerOutput(false);
-    state_ = reason;
+    SMPS_PID::powerOff();
+    on_ = false;
 }

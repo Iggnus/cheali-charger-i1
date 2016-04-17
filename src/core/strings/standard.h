@@ -86,6 +86,7 @@ namespace ProgramData {
     STRING(battery_Li430,   "L430");
     STRING(battery_Li435,   "L435");
     STRING(battery_NiZn,    "NiZn");
+    STRING(battery_LED,     "LED");
 }
 
 namespace SettingsMenu {
@@ -108,6 +109,7 @@ namespace SettingsMenu {
     //UARToutput menu
     STRING(temp,    "temp");
     STRING(pin7,    "pin7");
+    STRING(pin38,   "pin38");
 
     //UART view menu
     STRING(disable,     "disabled");
@@ -134,6 +136,7 @@ namespace ProgramDataMenu {
     STRING(batteryType, "battery:");
     STRING(voltage,     "V:");
     STRING(Vc_per_cell, "Vc:");
+    STRING(Vs_per_cell, "Vs:");
     STRING(Vd_per_cell, "Vd:");
     STRING(Vcutoff,     "Vco:");
     STRING(capacity,    "Cap:");
@@ -145,6 +148,7 @@ namespace ProgramDataMenu {
 
     STRING(enabledV,    "enab dV:");
     STRING(deltaV,      "|dV:");
+    STRING(ignoreFirst, "|ignr frst:");
 
     STRING(externT,     "extrn T:");
     STRING(dTdt,        "|dT/dt:");
@@ -179,22 +183,22 @@ namespace Calibrate {
 
 
     //calibration voltage menu
-    STRING(v_menu_input,    "Vin: ");
-    STRING(v_menu_cell1,    "Vb1: ");
-    STRING(v_menu_cell2,    "Vb2: ");
-    STRING(v_menu_cell3,    "Vb3: ");
-    STRING(v_menu_cell4,    "Vb4: ");
-    STRING(v_menu_cell5,    "Vb5: ");
-    STRING(v_menu_cell6,    "Vb6: ");
-    STRING(v_menu_cell7,    "Vb7: ");
-    STRING(v_menu_cell8,    "Vb8: ");
+    STRING(v_menu_input,    "Vin:");
+    STRING(v_menu_cell1,    "Vb1:");
+    STRING(v_menu_cell2,    "Vb2:");
+    STRING(v_menu_cell3,    "Vb3:");
+    STRING(v_menu_cell4,    "Vb4:");
+    STRING(v_menu_cell5,    "Vb5:");
+    STRING(v_menu_cell6,    "Vb6:");
+    STRING(v_menu_cell7,    "Vb7:");
+    STRING(v_menu_cell8,    "Vb8:");
 #if MAX_BANANCE_CELLS > 6
     STRING(v_menu_cellSum,  "V1-8:");
 #else
     STRING(v_menu_cellSum,  "V1-6:");
 #endif
     STRING(v_menu_output,   "Vout:");
-
+    STRING(menu_point,      "calib. p.:");
 
     //calibration charge current menu
     STRING(ic_menu_current0,    CHEALI_CHARGER_STRING(CALIBRATION_CHARGE_POINT0_mA) "mA");
@@ -214,15 +218,15 @@ namespace Calibrate {
     STRING(tp_menu_point1,  "point 2.");
 
     //calibration temperature menu
-    STRING(t_menu_temperature,  "temp: ");
-    STRING(t_menu_value,        "value:");
+    STRING(t_menu_temperature,  "temp:");
+    STRING(t_menu_adc,          "adc:");
 
 
     //calibration expert voltage menu
     STRING(ev_menu_cell0pin,        "Vb0pin:");
     STRING(ev_menu_cell1pin,        "Vb1pin:");
     STRING(ev_menu_cell2pin,        "Vb2pin:");
-    STRING(ev_menu_plusVoltagePin,  "Vplus: ");
+    STRING(ev_menu_plusVoltagePin,  "Vplus:");
     STRING(ev_menu_minusVoltagePin, "Vminus:");
 }
 

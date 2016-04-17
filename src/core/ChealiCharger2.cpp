@@ -19,7 +19,6 @@
 #include "MainMenu.h"
 #include "ProgramData.h"
 #include "AnalogInputs.h"
-#include "EditName.h"
 #include "ProgramMenus.h"
 #include "Options.h"
 #include "Utils.h"
@@ -76,8 +75,6 @@ void setup()
     Screen::initialize();
 
     Screen::runWelcomeScreen();
-
-    eeprom::check();
 }
 
 
@@ -87,6 +84,7 @@ int main()
 #ifdef ENABLE_HELPER
     helperMain();
 #else
+    eeprom::check();
     while(true) {
         loop();
     }

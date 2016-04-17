@@ -19,7 +19,6 @@
 #include "MainMenu.h"
 #include "ProgramData.h"
 #include "AnalogInputs.h"
-#include "EditName.h"
 #include "ProgramMenus.h"
 #include "Options.h"
 #include "Utils.h"
@@ -63,7 +62,7 @@ public:
         StaticMenu(vMenu),
         vNames_(vNames),
         dig_(dig){};
-    virtual void printItem(uint8_t index) {
+    virtual void printItem(uint16_t index) {
         StaticMenu::printItem(index);
         AnalogInputs::Name name = pgm::read(&vNames_[index]);
         if(index < MAX_BANANCE_CELLS +3) {
@@ -106,7 +105,7 @@ void run() {
     Balancer::powerOn();
 
     VoltageMenu v(voltageMenu, voltageName, 5);
-    int8_t index;
+    int16_t index;
     do {
         index = v.runSimple(true);
         if(index < 1) continue;
@@ -127,12 +126,3 @@ void run() {
 
 } //namespace BalancePortAnalyzer
 
-
-
-
-void helperMain()
-{
-//#ifdef ENABLE_HELPER_BALANCE_PORT_ANALYZER
-    BalancePortAnalyzer::run();
-//#endif
-}

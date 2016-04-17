@@ -70,8 +70,19 @@ uint16_t pow10(uint8_t n)
 
 int8_t sign(int16_t x)
 {
-    if(x>=0) return 1;
+    if(x == 0) return 0;
+    if(x >  0) return 1;
     return -1;
+}
+
+uint8_t countBits(uint16_t v)
+{
+    uint8_t bits = 0;
+    for(int8_t i = 0; i < 16; i++) {
+        if(v&1) bits++;
+        v>>=1;
+    }
+    return bits;
 }
 
 uint8_t digits(uint16_t x)
@@ -110,7 +121,8 @@ void change0ToInfSmart(uint16_t *v, int dir)
 
 void changeMinToMaxSmart(uint16_t *v, int dir, uint16_t min, uint16_t max)
 {
-    uint8_t dv = digits(*v);
+    //uint8_t dv = digits(*v);
+    uint8_t dv = digits(dir<0? *v-1 : *v);		//ign 1000 [-] -> 990 and not -> 900
     uint16_t step = 1;
     if(dv>1) step = pow10(dv-2);
     changeMinToMaxStep(v, dir, min, max, step);
@@ -132,23 +144,11 @@ uint8_t waitButtonPressed()
 {
     uint8_t key;
 
-    while(Keyboard::getPressedWithSpeed() != BUTTON_NONE);
+    while(Keyboard::getPressedWithDelay() != BUTTON_NONE);
 
     do {
-        key = Keyboard::getPressedWithSpeed();
+        key = Keyboard::getPressedWithDelay();
     } while(key == BUTTON_NONE);
 
     return key;
 }
-
-#ifdef FREEZE_COMPLETED
-bool waitButtonPressedLimTime()
-{
-  for(uint8_t c = 0; c < 10; c++) {
-    if(Keyboard::getPressed()) return true;
-    Time::delayDoIdle(100);
-  //  Time::delay(100);
-  }
-  return false;
-}
-#endif

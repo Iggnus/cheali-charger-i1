@@ -1,6 +1,7 @@
 
 
-set(CORE_DIR ${CMAKE_SOURCE_DIR}/src/core/)
+set(CORE_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(CORE_DIR_BIN ${CMAKE_BINARY_DIR}/src/core/)
 
 set(CORE_SOURCE
         AnalogInputs.cpp  AnalogInputsPrivate.h  ChealiCharger2.cpp  eeprom.cpp  Program.cpp      ProgramData.h       ProgramDCcycle.h  Settings.cpp  Utils.cpp
@@ -8,11 +9,12 @@ set(CORE_SOURCE
         AnalogInputsTypes.cpp
 )
 
-include_directories(${CORE_DIR})
+include_directories(${CORE_DIR_BIN})
 
-CHEALI_FIND("CORE_SOURCE_FILES" "${CORE_SOURCE}" "${CORE_DIR}" )
+CHEALI_ADD("CORE_SOURCE_FILES" "${CORE_SOURCE}")
 
 include(${CORE_DIR}/strategy/strategy.cmake)
+include(${CORE_DIR}/strategy/pid/pid.cmake)
 include(${CORE_DIR}/calibration/calibration.cmake)
 include(${CORE_DIR}/menus/menus.cmake)
 include(${CORE_DIR}/screens/screens.cmake)

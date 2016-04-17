@@ -20,13 +20,26 @@
 #include "Screen.h"
 #include "Hardware.h"
 #include "TheveninMethod.h"
+#include "Program.h"
+
+namespace SimpleChargeStrategy {
+
+    Strategy::statusType doStrategy();
+    void powerOn();
+    void powerOff();
+
+
+    const Strategy::VTable vtable PROGMEM = {
+        powerOn,
+        powerOff,
+        doStrategy
+    };
+}
 
 
 void SimpleChargeStrategy::powerOn()
 {
     SMPS::powerOn();
-    Strategy::setVI(ProgramData::VCharge, true);
-    TheveninMethod::initialize(true);
     SMPS::trySetIout(Strategy::minI);
 }
 
@@ -35,10 +48,16 @@ void SimpleChargeStrategy::powerOff()
     SMPS::powerOff();
 }
 
-void SimpleChargeStrategy::calculateThevenin()
+Strategy::statusType SimpleChargeStrategy::doStrategy()
 {
-    if(AnalogInputs::isOutStable()) TheveninMethod::calculateRthVth(SMPS::getIout());
+    SMPS::trySetIout(Strategy::maxI);
+    SMPS::setVout(Strategy::endV);
+
+    return Strategy::RUNNING;
 }
+
+
+
 
 
 

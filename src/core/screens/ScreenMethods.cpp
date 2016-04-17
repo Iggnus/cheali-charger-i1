@@ -31,19 +31,16 @@
 #include "ScreenMethods.h"
 #include "Balancer.h"
 
-#include "IO.h"    //ign
-#include "StaticEditMenu.h"
-#include "TheveninDischargeStrategy.h"
-//#include "SerialLog.h"		//ign
-//SerialLog::printString("getSelector "); SerialLog::printUInt(result); //SerialLog::printD(); SerialLog::printUInt(Rth.uI);  //igntst
-//SerialLog::printNL();  //igntst
-
-using namespace ProgramData;
-using namespace ProgramDataMenu;
-namespace Screen {
+namespace Screen { namespace Methods {
 
     void printCharge() {
         lcdPrintCharge(AnalogInputs::getRealValue(AnalogInputs::Cout), 8);
+        lcdPrintSpace1();
+    }
+
+    void printTime() {
+        lcdPrintSpace1();
+        lcdPrintTime(Monitor::getTimeSec());
         lcdPrintSpace1();
     }
 
@@ -54,7 +51,7 @@ namespace Screen {
         } else if(Discharger::isPowerOn()) {
             c = 'D';
             if(SMPS::isPowerOn()) c = 'E';
-        } else if(Balancer::isWorking()) {
+        } else if(::Balancer::isWorking()) {
             c = 'B';
         }
 
@@ -62,9 +59,7 @@ namespace Screen {
             c = 'W';
         }
         lcdPrintChar(c);
-        lcdPrintSpace1();
-        lcdPrintTime(Monitor::getTimeSec());
-        lcdPrintSpace1();
+        printTime();
     }
 
     void printDeltaV() {
@@ -88,35 +83,12 @@ namespace Screen {
     }
 
 
-} // namespace Screen
-
-
+} }// namespace Screen::Methods
 
 void Screen::Methods::displayFirstScreen()
 {
     lcdSetCursor0_0();
-   if(Screen::OnTheFly_ == 2) {      //ign
-    if(!IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
-      if(Screen::OnTheFly_dir) {
-        ProgramData::changeId(Screen::OnTheFly_dir);
-//        Strategy::setVI(ProgramData::VDischarge, false);
-        Strategy::setVI(ProgramData::VIdle, false);
-      }
-      if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
-      else lcdPrintSpaces(9);
-    }
-    else if(!IO::digitalRead(SMPS_DISABLE_PIN)) {
-      if(Screen::OnTheFly_dir) {
-        ProgramData::changeIc(Screen::OnTheFly_dir);
-//        Strategy::setVI(ProgramData::VCharge, true);
-        Strategy::setVI(ProgramData::VIdle, true);
-      }
-      if(Screen::OnTheFly_blink) lcdPrintCurrent(Strategy::maxI, 9);
-      else lcdPrintSpaces(9);
-    }
-    else lcdPrintSpaces(9);
-  }
-  else printCharge();
+    printCharge();
     AnalogInputs::printRealValue(AnalogInputs::Iout,     7);
     lcdPrintSpaces();
 
@@ -129,24 +101,9 @@ void Screen::Methods::displayFirstScreen()
 void Screen::Methods::displayCIVlimits()
 {
     lcdSetCursor0_0();
-
-   if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {      //ign
-    if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
-      changeMinToMaxSmart(&Monitor::c_limit, Screen::OnTheFly_dir, 10, ANALOG_MAX_CHARGE);
-    }
-  }
-
-  if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
-    lcdPrintSpaces(8);
-  }
-  else {
-//    lcdPrintCharge(ProgramData::getCapacityLimit(), 8);
-    lcdPrintCharge(Monitor::c_limit, 8);
-  }
-
+    lcdPrintCharge(ProgramData::getCapacityLimit(), 8);
     lcdPrintSpace1();
     lcdPrintCurrent(Strategy::maxI, 7);
-    //ProgramData::currentProgramData.printIcString();
     lcdPrintSpaces();
 
     lcdSetCursor0_1();
@@ -159,21 +116,7 @@ void Screen::Methods::displayTime()
 {
     lcdSetCursor0_0();
 #ifdef ENABLE_TIME_LIMIT
-   if(Screen::OnTheFly_ == 2 && Screen::OnTheFly_dir) {      //ign
-    if(!IO::digitalRead(SMPS_DISABLE_PIN) || !IO::digitalRead(DISCHARGE_DISABLE_PIN)) {
-      ProgramData::changeTime(Screen::OnTheFly_dir);
-    }
-  }
-
-    //lcdPrintSpace1();    //igntst
-  if(Screen::OnTheFly_ == 2 && !Screen::OnTheFly_blink) {
-    lcdPrintSpaces(8);
-  }
-  else {
-    //ProgramData::currentProgramData.printTimeString();
     lcdPrintAnalog(ProgramData::battery.time, 8, AnalogInputs::TimeLimitMinutes);
-
-  }
     lcdPrintSpaces(2);
 #else
     lcdPrint_P(PSTR("time:     "));
@@ -203,17 +146,14 @@ void Screen::Methods::displayR()
 
 void Screen::Methods::displayVinput()
 {
-	if(Screen::OnTheFly_ == 2) Screen::Methods::displayFlyMenu();
-	else {
-		lcdSetCursor0_0();
-		lcdPrint_P(PSTR("Vinput="));
-		AnalogInputs::printRealValue(AnalogInputs::Vin, 7);
-		lcdPrintSpaces();
-		lcdSetCursor0_1();
-		lcdPrint_P(PSTR(" limit="));
-		lcdPrintAnalog(settings.inputVoltageLow, 7, AnalogInputs::Voltage);
-		lcdPrintSpaces();
-	}
+    lcdSetCursor0_0();
+    lcdPrint_P(PSTR("Vinput="));
+    AnalogInputs::printRealValue(AnalogInputs::Vin, 7);
+    lcdPrintSpaces();
+    lcdSetCursor0_1();
+    lcdPrint_P(PSTR(" limit="));
+    lcdPrintAnalog(settings.inputVoltageLow, 7, AnalogInputs::Voltage);
+    lcdPrintSpaces();
 }
 
 void Screen::Methods::displayVout()
@@ -302,71 +242,4 @@ void Screen::Methods::displayEnergy()
     lcdPrint_P(PSTR("%"));
     lcdPrintSpaces();
 }
-
-/*
-#define COND_ALWAYS         StaticEditMenu::Always
-#define COND_NiXX           1
-#define COND_Pb             2
-#define COND_LiXX           4
-#define COND_NiZn           8
-#define COND_LiXX_NiZn      (COND_LiXX+COND_NiZn)
-#define COND_LiXX_NiZn_Pb   (COND_LiXX+COND_NiZn+COND_Pb)
-#define COND_NiXX_Pb        (COND_NiXX+COND_Pb)
-#define COND_BATTERY        (COND_NiXX+COND_Pb+COND_LiXX+COND_NiZn)
- */
-const cprintf::ArrayData batteryTypeData  PROGMEM = {batteryString, &battery.type};
-const StaticEditMenu::StaticEditData editData[] PROGMEM = {
-{string_adaptiveDis,	15,	{CP_TYPE_ON_OFF,0,&battery.adaptiveDis},	{1, 0, 1}},
-{string_Vc_per_cell,	14,	{CP_TYPE_V,0,&battery.Vc_per_cell},			{10,ANALOG_VOLT(0.0),ANALOG_VOLT(5.0)}},
-{string_Vd_per_cell,	15,	{CP_TYPE_V,0,&battery.Vd_per_cell},			{10,ANALOG_VOLT(0.0),ANALOG_VOLT(5.0)}},
-{NULL,                  StaticEditMenu::Last}
-};
-
-uint16_t getSelector() {
-    STATIC_ASSERT(LAST_BATTERY_CLASS == 4);
-    uint16_t result = 1<<14;
-    if(battery.type != None) result += 1 << getBatteryClass();
-    return result;
-}
- 
-void editCallback(StaticEditMenu * menu, uint16_t * adr) {
-    if(adr == &ProgramData::battery.adaptiveDis) {
-		TheveninDischargeStrategy::endOnTheveninMethodComplete_ = battery.adaptiveDis;
-        //ProgramData::changedType();
-    } else if(adr == &ProgramData::battery.Vc_per_cell) {
-        if(!IO::digitalRead(SMPS_DISABLE_PIN)) Strategy::setVI(ProgramData::VCharge, true);
-        //ProgramData::changedCapacity();
-    } else if(adr == &ProgramData::battery.Vd_per_cell) {
-        if(!IO::digitalRead(DISCHARGE_DISABLE_PIN)) Strategy::setVI(ProgramData::VDischarge, false);
-        //ProgramData::changedIc();
-    } else if(adr == &ProgramData::battery.Id) {
-        //ProgramData::changedId();
-    }
-//    ProgramData::check();
-//    menu->setSelector(getSelector());
-}
-
-StaticEditMenu menu(editData, editCallback);
-//StaticEditMenu menu(editData);
-int8_t item;
-	
-void Screen::Methods::displayFlyMenu()
-{
-        menu.setSelector(getSelector());
-        item = menu.runSimple();
-        if(item < 0) Screen::OnTheFly_ = 0;
-		else
-        {
-	//        ProgramData::Battery undo(ProgramData::battery);
-            if(!menu.runEdit()) {
-	//			ProgramData::battery = undo;
-            }
-			else {
-				Buzzer::soundSelect();
-            }
-//            settings.apply();
-        }
-//	Screen::OnTheFly_ = 0;
-}
-
 

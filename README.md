@@ -15,6 +15,7 @@ For 150W+ chargers with hardware voltage feedback
 
 Calibrate charge current BEFORE modification!
 
+--
 
 How to modify 
 

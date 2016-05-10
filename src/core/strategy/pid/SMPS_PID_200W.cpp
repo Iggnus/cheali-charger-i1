@@ -17,12 +17,12 @@ namespace SMPS_PID {
 	//we have to use i_PID_CutOffVoltage, on some chargers (M0516) ADC can read up to 60V
 //    volatile uint16_t i_cutOffVoltage;
 	volatile long i_MV;
-    volatile uint8_t i_enable;
+    volatile bool i_enable;
 
 	void setPID_MV(long value);
 
 	volatile uint16_t Vsoftstart;
-	uint8_t ignskip;
+//	uint8_t ignskip;
 }
 
 void SMPS_PID::update()
@@ -39,13 +39,9 @@ void SMPS_PID::update()
 	//if Vout is too high disable PID
  	if(adcVoutPlus >= ANALOG_INPUTS_MAX_ADC_Vout_plus_pin) {
 //SerialLog::printString("abnormal "); SerialLog::printUInt(adcVoutPlus); SerialLog::printNL(); //SerialLog::printUInt(AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin));
-		i_enable--;
-		if(i_enable == 0) {
-			powerOff();
-			return;
-		}
+		powerOff();
+		return;
 	}
-	else i_enable = 2;
  
 	long error_Iout = i_setpoint_adcIout;
 	error_Iout -= AnalogInputs::getADCValue(AnalogInputs::Ismps);
@@ -74,22 +70,20 @@ void SMPS_PID::update()
 
 	SMPS_PID::setPID_MV(i_MV);
 
-	if(--ignskip == 0){
-		SerialLog::printString("PID::upd "); SerialLog::printLong(error_Iout); SerialLog::printD();SerialLog::printLong(i_MV); SerialLog::printD(); SerialLog::printUInt(adcVoutPlus);  //igntst
-		SerialLog::printNL();  //igntst
-		ignskip == 200;
-	}
+//	if(--ignskip == 0){
+//		SerialLog::printString("PID::upd "); SerialLog::printLong(error_Iout); SerialLog::printD();SerialLog::printLong(i_MV); SerialLog::printD(); SerialLog::printUInt(adcVoutPlus);  //igntst
+//		SerialLog::printNL();  //igntst
+//		ignskip == 200;
+//	}
 }
 
 void SMPS_PID::initialize()
 {
-//SerialLog::printString("PID::initialize "); //SerialLog::printInt(Rth.iV); SerialLog::printD(); SerialLog::printUInt(Rth.uI); SerialLog::printD();SerialLog::printLong(Vth_);  //igntst
-//SerialLog::printNL();  //igntst
 }
 
 void SMPS_PID::powerOff()
 {
-	i_enable = 0;
+	i_enable = false;
 	hardware::setChargerOutput(false);
 }
 
@@ -119,7 +113,7 @@ void SMPS_PID::powerOn()
 		i_MV = i_setpoint_Vout;
 	}
 	
-	i_enable = 2;
+	i_enable = true;
 	
 }
 

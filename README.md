@@ -1,10 +1,10 @@
 Welcome to cheali-charger!
-
-Fork of Pawel's firmware [Branch:powerSupply at 01.11.2015] https://github.com/stawel/cheali-charger/tree/powerSupply
+--
+Fork of Pawel's firmware [Branch:powerSupply at 01.11.2015]https://github.com/stawel/cheali-charger/tree/powerSupply
 
 ___
 
-proof of concept - not for every day usage
+**proof of concept - not for every day usage**
 
 
 	 THIS FIRMWARE IS FOR HW-MODED CHARGERS ONLY!

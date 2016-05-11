@@ -42,20 +42,14 @@ namespace Strategy {
     bool doBalance;
 
     void setVI(ProgramData::VoltageType vt, bool charge) {
-		if(vt != ProgramData::VIdle) endV = ProgramData::getVoltage(vt);
+		if(vt != ProgramData::VNominal) endV = ProgramData::getVoltage(vt);
 
         if(charge) {
             maxI = ProgramData::battery.Ic;
             minI = ProgramData::battery.minIc;
-//            if(vt == ProgramData::VCharge && ProgramData::currentProgramData.isLiXX()) {
-//                endV += settings.overCharge_LiXX * ProgramData::currentProgramData.battery.cells;
-//            }
         } else {
             maxI = ProgramData::battery.Id;
             minI = ProgramData::battery.minId;
-//            if(vt == ProgramData::VDischarge && ProgramData::currentProgramData.isLiXX()) {
-//                endV += settings.overDischarge_LiXX * ProgramData::currentProgramData.battery.cells;
-//            }
         }
 
     }

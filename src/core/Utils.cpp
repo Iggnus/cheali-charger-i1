@@ -75,6 +75,16 @@ int8_t sign(int16_t x)
     return -1;
 }
 
+uint8_t countBits(uint16_t v)
+{
+    uint8_t bits = 0;
+    for(int8_t i = 0; i < 16; i++) {
+        if(v&1) bits++;
+        v>>=1;
+    }
+    return bits;
+}
+
 uint8_t digits(uint16_t x)
 {
     return digits((int32_t)x);
@@ -111,7 +121,8 @@ void change0ToInfSmart(uint16_t *v, int dir)
 
 void changeMinToMaxSmart(uint16_t *v, int dir, uint16_t min, uint16_t max)
 {
-    uint8_t dv = digits(*v);
+    //uint8_t dv = digits(*v);
+    uint8_t dv = digits(dir<0? *v-1 : *v);		//ign
     uint16_t step = 1;
     if(dv>1) step = pow10(dv-2);
     changeMinToMaxStep(v, dir, min, max, step);

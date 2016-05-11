@@ -5,6 +5,9 @@
 #include "AnalogInputs.h"
 #include "atomic.h"
 
+//#define ENABLE_DEBUG
+#include "debug.h"
+
 namespace {
     volatile uint16_t i_PID_setpoint;
     //we have to use i_PID_CutOffVoltage, on some chargers (M0516) ADC can read up to 60V
@@ -25,6 +28,7 @@ uint16_t hardware::getPIDValue()
     return v;
 }
 
+extern bool adcDebugStop;
 
 void SMPS_PID::update()
 {
@@ -33,6 +37,8 @@ void SMPS_PID::update()
     if(AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin) >= i_PID_CutOffVoltage) {
         hardware::setChargerOutput(false);
         i_PID_enable = false;
+        runDebug(adcDebugStop = true);
+        LogDebug(AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin), ">=", i_PID_CutOffVoltage);
         return;
     }
 

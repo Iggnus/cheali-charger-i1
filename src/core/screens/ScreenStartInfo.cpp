@@ -49,8 +49,8 @@ namespace StartInfo {
     void printVoltageString(int8_t dig)
     {
         uint16_t voltage = ProgramData::getDefaultVoltage();
-        if(ProgramData::battery.type == ProgramData::Unknown || ProgramData::battery.type == ProgramData::LED) {
-            voltage = ProgramData::getVoltage(ProgramData::VCharge);
+        if(ProgramData::battery.type == ProgramData::UnknownBatteryType || ProgramData::battery.type == ProgramData::LED) {
+            voltage = ProgramData::getVoltage(ProgramData::VCharged);
             lcdPrintVoltage(voltage, dig);
         } else {
             uint8_t cells = ProgramData::battery.cells;
@@ -111,13 +111,13 @@ void Screen::StartInfo::displayStartInfo()
     if(bindex & 1) AnalogInputs::printRealValue(AnalogInputs::Vout, 5);
     else lcdPrintSpaces(5);
 
-    lcdPrintSpace1();
+    lcdPrintChar(' ');
     if(ProgramData::isLiXX()) {
         //display balance port
         if(bindex & 2) AnalogInputs::printRealValue(AnalogInputs::Vbalancer, 5);
         else lcdPrintSpaces(5);
 
-        if(bindex & 4) lcdPrintDigit(AnalogInputs::getConnectedBalancePorts());
+        if(bindex & 4) lcdPrintDigit(AnalogInputs::getConnectedBalancePortCellsCount());
         else lcdPrintSpace1();
     } else {
 

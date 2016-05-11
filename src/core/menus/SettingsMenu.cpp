@@ -22,6 +22,7 @@
 #include "Buzzer.h"
 #include "SerialLog.h"
 #include "StaticEditMenu.h"
+#include "memory.h"
 
 //#define ENABLE_DEBUG
 #include "debug.h"
@@ -52,9 +53,6 @@ const cprintf::ArrayData UARTSpeedsData PROGMEM = {Settings::UARTSpeedValue, &se
 const char * const SettingsUARToutput[] PROGMEM = {string_temp, string_pin7, string_pin38};
 const cprintf::ArrayData UARToutputData  PROGMEM = {SettingsUARToutput, &settings.UARToutput};
 
-
-const char * const SettingsMenuType[] PROGMEM = {string_simple, string_advanced};
-const cprintf::ArrayData menuTypeData  PROGMEM = {SettingsMenuType, &settings.menuType};
 
 const AnalogInputs::ValueType Tmin = (Settings::TempDifference/ANALOG_CELCIUS(1) + 1)*ANALOG_CELCIUS(1);
 const AnalogInputs::ValueType Tmax = ANALOG_CELCIUS(99);
@@ -94,7 +92,9 @@ const StaticEditMenu::StaticEditData editData[] PROGMEM = {
 #endif
 {string_AudioBeep,      COND_ALWAYS,    {CP_TYPE_ON_OFF,0,&settings.audioBeep},         {1, 0, 1}},
 {string_minIc,          COND_ALWAYS,    {CP_TYPE_A,0,&settings.minIc},                  {ANALOG_AMP(0.001), ANALOG_AMP(0.001), ANALOG_AMP(0.500)}},
+{string_maxIc,          COND_ALWAYS,    {CP_TYPE_A,0,&settings.maxIc},                  {CE_STEP_TYPE_SMART, ANALOG_AMP(0.001), MAX_CHARGE_I}},
 {string_minId,          COND_ALWAYS,    {CP_TYPE_A,0,&settings.minId},                  {ANALOG_AMP(0.001), ANALOG_AMP(0.001), ANALOG_AMP(0.500)}},
+{string_maxId,          COND_ALWAYS,    {CP_TYPE_A,0,&settings.maxId},                  {CE_STEP_TYPE_SMART, ANALOG_AMP(0.001), MAX_DISCHARGE_I}},
 {string_inputLow,       COND_ALWAYS,    {CP_TYPE_V,3,&settings.inputVoltageLow},        {ANALOG_VOLT(1), ANALOG_VOLT(7), ANALOG_VOLT(30)}},
 #ifdef ENABLE_ANALOG_INPUTS_ADC_NOISE
 {string_adcNoise,       COND_ALWAYS,    {CP_TYPE_ON_OFF,0,&settings.adcNoise},          {1, 0, 1}},
@@ -104,7 +104,6 @@ const StaticEditMenu::StaticEditData editData[] PROGMEM = {
 #ifdef ENABLE_TX_HW_SERIAL
 {string_UARToutput,     COND_UART_ON,   {CP_TYPE_STRING_ARRAY,0,&UARToutputData},        {1, 0, 2}},
 #endif
-{string_MenuType,       COND_ALWAYS,    {CP_TYPE_STRING_ARRAY,0,&menuTypeData},         {1, 0, 1}},
 
 #ifdef ENABLE_SETTINGS_MENU_RESET
 {string_reset,          StaticEditMenu::Always, {0,0,NULL}},
@@ -114,6 +113,7 @@ const StaticEditMenu::StaticEditData editData[] PROGMEM = {
 
 void editCallback(StaticEditMenu * menu, uint16_t * adr) {
     menu->setSelector(getSelector());
+    Settings::check();
 }
 
 void run() {

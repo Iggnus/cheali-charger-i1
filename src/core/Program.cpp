@@ -76,25 +76,25 @@ void Program::setupStorage()
 }
 void Program::setupTheveninCharge()
 {
-    Strategy::setVI(ProgramData::VCharge, true);
+    Strategy::setVI(ProgramData::VCharged, true);
     Strategy::strategy = &TheveninChargeStrategy::vtable;
 }
 
 void Program::setupDeltaCharge()
 {
-    Strategy::setVI(ProgramData::VCharge, true);
+    Strategy::setVI(ProgramData::VCharged, true);
     Strategy::strategy = &DeltaChargeStrategy::vtable;
 }
 
 void Program::setupDischarge()
 {
-    Strategy::setVI(ProgramData::VDischarge, false);
+    Strategy::setVI(ProgramData::VDischarged, false);
     Strategy::strategy = &TheveninDischargeStrategy::vtable;
 }
 
 void Program::setupPowerSupplyCharge()
 {
-    Strategy::setVI(ProgramData::VCharge, true);
+    Strategy::setVI(ProgramData::VCharged, true);
     Strategy::strategy = &SimpleChargeStrategy::vtable;
 }
 
@@ -130,9 +130,8 @@ void Program::setupProgramType(ProgramType prog) {
         setupDischarge();
         break;
     case Program::FastCharge:
-        //TODO: ??
-        //Strategy::minIdiv = 5;
         setupTheveninCharge();
+        Strategy::minI = ProgramData::battery.Ic / 5;
         break;
     case Program::Storage:
         setupStorage();
@@ -171,7 +170,7 @@ Strategy::statusType Program::runWithoutInfo(ProgramType prog)
 void Program::dischargeOutputCapacitor()
 {
     Discharger::powerOn();
-    Discharger::trySetIout(MAX_DISCHARGE_I);
+    Discharger::trySetIout(DISCHARGE_OUTPUT_CAPACITOR_CURRENT);
     Time::delayDoIdle(100);
     Discharger::powerOff();
 }

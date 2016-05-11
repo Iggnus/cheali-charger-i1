@@ -31,19 +31,27 @@ checkAllCRC(x);
 defaultCalibrationFile = 'defaultCalibration.cpp'
 
 fmt = DFormatter()
-f = open(defaultCalibrationFile + '.template', 'r')
+f = open(defaultCalibrationFile + '.template' + str(getCellNumber(module)), 'r')
 template = f.read()
 out = fmt.vformat(template, [],x)
 f = open(defaultCalibrationFile, 'w')
 f.write(out)
 
 
+#remove this line for "edit" example
 sys.exit()
 
-#example deprecated
+#example, edit battery: 6
 
-x.programData[5].name = 'zosia'
-restoreCRC(x,'programData');
-checkAllCRC();
+x.battery[5].type = module.NiMH
+x.battery[5].Ic = 1111
+x.battery[5].capacity = 2222
+x.battery[5].cells = 3
+x.battery[5].enable_deltaV = 1
+x.battery[5].deltaV = 8
+
+
+restoreCRC(x,'battery');
+checkAllCRC(x);
 f = open('output.bin', 'wb')
 f.write(x);

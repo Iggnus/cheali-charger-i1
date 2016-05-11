@@ -36,6 +36,7 @@
 #include "SettingsMenu.h"
 #include STRINGS_HEADER
 #include "atomic.h"
+#include "memory.h"
 
 namespace BalancePortAnalyzer {
 
@@ -62,7 +63,7 @@ public:
         StaticMenu(vMenu),
         vNames_(vNames),
         dig_(dig){};
-    virtual void printItem(uint8_t index) {
+    virtual void printItem(uint16_t index) {
         StaticMenu::printItem(index);
         AnalogInputs::Name name = pgm::read(&vNames_[index]);
         if(index < MAX_BANANCE_CELLS +3) {
@@ -105,7 +106,7 @@ void run() {
     Balancer::powerOn();
 
     VoltageMenu v(voltageMenu, voltageName, 5);
-    int8_t index;
+    int16_t index;
     do {
         index = v.runSimple(true);
         if(index < 1) continue;

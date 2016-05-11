@@ -22,6 +22,7 @@
 #include "Hardware.h"
 #include "TxSoftSerial.h"
 #include "irq_priority.h"
+#include "Serial.h"
 
 #include "IO.h"
 
@@ -32,13 +33,22 @@ namespace TxSoftSerial {
 #define START_BIT 0
 #define STOP_BIT 512
 
-uint8_t  txBuffer_[Tx_BUFFER_SIZE];
+uint8_t  *txBuffer_=Serial::txBuffer;
+
 uint16_t txData_;
 volatile uint32_t *txPin_;
 
 std::atomic<uint16_t> tail_(0);
 std::atomic<uint16_t> head_(0);
 
+void disableTxPin() {
+    //we set TX pin to ANALOG_INPUT for ext. temp.
+    IO::pinMode(UART_TX_PIN, ANALOG_INPUT);
+}
+void enableTxPin() {
+    IO::disableFuncADC(IO::getADCChannel(UART_TX_PIN));
+    IO::pinMode(UART_TX_PIN, GPIO_PMD_OUTPUT);
+}
 
 void initialize()
 {
@@ -48,18 +58,12 @@ void initialize()
     NVIC_EnableIRQ(TMR2_IRQn);
     txPin_ = IO::getPinAddress_(UART_TX_PIN);
 
-#ifndef ENABLE_EXT_TEMP_AND_UART_COMMON_OUTPUT
-    IO::pinMode(UART_TX_PIN, GPIO_PMD_OUTPUT);
-#endif
-
+    disableTxPin();
 }
 
 void begin(unsigned long baud)
 {
-#ifdef ENABLE_EXT_TEMP_AND_UART_COMMON_OUTPUT
-    IO::disableFuncADC(IO::getADCChannel(UART_TX_PIN));
-    IO::pinMode(UART_TX_PIN, GPIO_PMD_OUTPUT);
-#endif
+    enableTxPin();
 
     TIMER_Open(TIMER2, TIMER_PERIODIC_MODE, baud);
     TIMER_EnableInt(TIMER2);
@@ -95,6 +99,8 @@ void end()
 {
     TIMER_Stop(TIMER2);
     TIMER_DisableInt(TIMER2);
+
+    disableTxPin();
 }
 
 inline void getNewData() {

@@ -29,11 +29,11 @@
 
 namespace Keyboard {
     uint8_t getSpeed();
-    uint8_t getLast();
-    uint8_t getPressedWithDelay();
+    uint8_t  getLast();
+    uint8_t getSpeedFactor();
+    uint8_t  getPressedWithDelay();
     bool isLongPressTime();
 };
 
 
 #endif /* KEYBOARD_H_ */
-

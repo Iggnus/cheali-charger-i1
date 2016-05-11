@@ -24,30 +24,30 @@
 #include "Settings.h"
 #include "eeprom.h"
 
-#include "Monitor.h"		//ign
-//#include "SerialLog.h"		//ign
+#include "Monitor.h"    //ign
+//#include "SerialLog.h"    //ign
 
 
 namespace ProgramData {
 
-	uint8_t volt_type;
+  uint8_t volt_type;
 
 #ifdef ENABLE_AutoTime
-	void AutoTime()
-	{
-		uint32_t bat_ch = battery.Ic * 77;		//ign  130%
-		bat_ch /= battery.capCutoff;
+  void AutoTime()
+  {
+    uint32_t bat_ch = battery.Ic * 77;    //ign  130%
+    bat_ch /= battery.capCutoff;
 
-		uint32_t bat_dis = battery.adaptiveDis * 20;
-		bat_dis += 100;
-		bat_dis *= battery.Id;
-		bat_dis /= 110;							//ign  110%
+    uint32_t bat_dis = battery.adaptiveDis * 20;
+    bat_dis += 100;
+    bat_dis *= battery.Id;
+    bat_dis /= 110;              //ign  110%
 
-		bat_ch = min(bat_ch, bat_dis);
-		bat_dis = battery.capacity * 60;		//ign  *60min
-	//	bat_dis = Monitor::c_limit * 60;		//ign  *60min
-		battery.time = bat_dis / bat_ch;
-	}
+    bat_ch = min(bat_ch, bat_dis);
+    bat_dis = battery.capacity * 60;    //ign  *60min
+  //  bat_dis = Monitor::c_limit * 60;    //ign  *60min
+    battery.time = bat_dis / bat_ch;
+  }
 #endif
 }
 
@@ -56,7 +56,7 @@ ProgramData::Battery ProgramData::battery;
 //battery voltage limits, see also: ProgramData::getVoltagePerCell, ProgramData::getVoltage
 const AnalogInputs::ValueType voltsPerCell[][ProgramData::LAST_VOLTAGE_TYPE] PROGMEM  =
 {
-//          { VIdle,              VCharge,            VDischarge,         VStorage,           ValidEmpty};
+//          { VNominal,           VCharged,           VDischarged,        VStorage,           VvalidEmpty};
 /*None*/    { 1,                  1,                  1,                  1,                  1},
 /*NiCd*/    { ANALOG_VOLT(1.200), ANALOG_VOLT(1.800), ANALOG_VOLT(0.850), 0,                  ANALOG_VOLT(0.850)},
 //http://en.wikipedia.org/wiki/Nickel%E2%80%93metal_hydride_battery
@@ -99,7 +99,7 @@ uint16_t ProgramData::getDefaultVoltage(VoltageType type)
     uint16_t cells = battery.cells;
     uint16_t voltage = getDefaultVoltagePerCell(type);
 
-    if(type == VDischarge && battery.type == NiMH && cells > 6) {
+    if(type == VDischarged && battery.type == NiMH && cells > 6) {
         //based on http://eu.industrial.panasonic.com/sites/default/pidseu/files/downloads/files/ni-mh-handbook-2014_interactive.pdf
         //page 11: "Discharge end voltage"
         cells--;
@@ -111,21 +111,21 @@ uint16_t ProgramData::getDefaultVoltage(VoltageType type)
 uint16_t ProgramData::getVoltage(VoltageType type) {
     uint16_t cells = battery.cells;
     uint16_t voltage = getDefaultVoltagePerCell(type);
-	volt_type = 3;
-    if (type == VCharge) {
+  volt_type = 3;
+    if (type == VCharged) {
         voltage = battery.Vc_per_cell;
-		volt_type = 1;
-    } else if (type == VDischarge) {
+    volt_type = 1;
+    } else if (type == VDischarged) {
         voltage = battery.Vd_per_cell;
-		volt_type = 2;
+    volt_type = 2;
     } else if (type == VStorage) {
         voltage = battery.Vs_per_cell;
     }
 
     //TODO:type == VDischarge && battery.type == NiMH && cells > 6
     //see getDefaultVoltage
-//	if(battery.type == Unknown) return cells + voltage;		//ign199
-//	else return cells * voltage;							//ign199
+//  if(battery.type == Unknown) return cells + voltage;    //ign199
+//  else return cells * voltage;              //ign199
     return cells * voltage;
 }
 
@@ -186,7 +186,7 @@ int16_t ProgramData::getDeltaVLimit()
 
 uint16_t ProgramData::getMaxIc()
 {
-    AnalogInputs::ValueType v = getDefaultVoltage(VDischarge);
+    AnalogInputs::ValueType v = getDefaultVoltage(VDischarged);
 #ifdef ENABLE_DYNAMIC_MAX_POWER
     if(v > ANALOG_VOLT(8)) {
         v -= ANALOG_VOLT(8);
@@ -197,26 +197,26 @@ uint16_t ProgramData::getMaxIc()
 
     AnalogInputs::ValueType i = AnalogInputs::evalI(MAX_CHARGE_P, v);
 
-    if(i > MAX_CHARGE_I)
-        i = MAX_CHARGE_I;
+    if(i > settings.maxIc)
+        i = settings.maxIc;
     return i;
 }
 
 uint16_t ProgramData::getMaxId()
 {
-    AnalogInputs::ValueType v = getDefaultVoltage(VDischarge);
+    AnalogInputs::ValueType v = getDefaultVoltage(VDischarged);
     AnalogInputs::ValueType i = AnalogInputs::evalI(MAX_DISCHARGE_P, v);
 
-    if(i > MAX_DISCHARGE_I)
-        i = MAX_DISCHARGE_I;
+    if(i > settings.maxId)
+        i = settings.maxId;
     return i;
 }
 
 uint16_t ProgramData::getMaxCells()
 {
-    if(battery.type == Unknown || battery.type == LED)
+    if(battery.type == UnknownBatteryType || battery.type == LED)
         return 1;
-    uint16_t v = getDefaultVoltagePerCell(VCharge);
+    uint16_t v = getDefaultVoltagePerCell(VCharged);
     return MAX_CHARGE_V / v;
 }
 
@@ -273,7 +273,7 @@ void ProgramData::saveProgramData(uint8_t index)
 
 void ProgramData::restoreDefault()
 {
-    battery.type = None;
+    battery.type = NoneBatteryType;
     changedType();
 
     for(int i=0;i< MAX_PROGRAMS;i++) {
@@ -284,11 +284,10 @@ void ProgramData::restoreDefault()
 
 void ProgramData::changedType()
 {
-    battery.Vc_per_cell = getDefaultVoltagePerCell(VCharge);
-    battery.Vd_per_cell = getDefaultVoltagePerCell(VDischarge);
+    battery.Vc_per_cell = getDefaultVoltagePerCell(VCharged);
+    battery.Vd_per_cell = getDefaultVoltagePerCell(VDischarged);
 
-    if(battery.type == None) {
-        battery.type = None;
+    if(battery.type == NoneBatteryType) {
         battery.capacity = ANALOG_CHARGE(2.000);
         battery.cells = 3;
 
@@ -319,11 +318,10 @@ void ProgramData::changedType()
 
 }
 
-
 void ProgramData::changedIc()
 {
 #ifdef ENABLE_AutoTime
-	AutoTime();
+  AutoTime();
 #endif
     ProgramData::check();
     ProgramData::battery.minIc = ProgramData::battery.Ic/16;
@@ -332,7 +330,7 @@ void ProgramData::changedIc()
 void ProgramData::changedId()
 {
 #ifdef ENABLE_AutoTime
-	AutoTime();
+  AutoTime();
 #endif
     ProgramData::check();
     ProgramData::battery.minId = ProgramData::battery.Id/16;
@@ -355,17 +353,17 @@ void ProgramData::changedCapacity()
 void ProgramData::printProgramData(uint8_t index)
 {
     loadProgramData(index);
-    if(battery.type != None) {
+    if(battery.type != NoneBatteryType) {
         Screen::StartInfo::printBatteryString();
         lcdPrintSpace1();
     }
 
     switch(battery.type) {
-    case None:
+    case NoneBatteryType:
         lcdPrintUInt(index+1);
         lcdPrintChar(':');
         break;
-    case Unknown:
+    case UnknownBatteryType:
         Screen::StartInfo::printVoltageString(9);
         break;
     case LED:
@@ -385,9 +383,9 @@ void ProgramData::printProgramData(uint8_t index)
 void ProgramData::changeIc(int direction)
 {
     change0ToInfSmart(&battery.Ic, direction);
-//	battery.minIc = battery.Ic / 16;
+//  battery.minIc = battery.Ic / 16;
 #ifdef ENABLE_AutoTime
-	AutoTime();
+  AutoTime();
 #endif
     check();
 }
@@ -395,9 +393,9 @@ void ProgramData::changeIc(int direction)
 void ProgramData::changeId(int direction)
 {
     change0ToInfSmart(&battery.Id, direction);
-//	battery.minId = battery.Id / 16;
+//  battery.minId = battery.Id / 16;
 #ifdef ENABLE_AutoTime
-	AutoTime();
+  AutoTime();
 #endif
     check();
 }
@@ -411,7 +409,8 @@ void ProgramData::changeVoltage(int direction)
 */
 void ProgramData::changeTime(int direction)
 {
-	changeMinToMaxSmart(&battery.time, direction, 1, UINT16_MAX);
+  changeMinToMaxSmart(&battery.time, direction, 1, UINT16_MAX);
     check();
 }
+
 

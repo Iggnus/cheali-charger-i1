@@ -62,8 +62,8 @@ namespace SMPS {
 
 //		ANALOG_WATT(2.000);		//igntst
         AnalogInputs::ValueType i = AnalogInputs::evalI(MAX_CHARGE_P, v);
-        if(i > MAX_CHARGE_I)
-            i = MAX_CHARGE_I;
+        if(i > settings.maxIc)
+            i = settings.maxIc;
         return i;
     }
 }

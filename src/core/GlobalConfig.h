@@ -18,6 +18,8 @@
 #ifndef GLOBAL_CONFIG_H_
 #define GLOBAL_CONFIG_H_
 
+#include <AnalogInputsTypes.h>
+
 #define LCD_LINES               2
 #define LCD_COLUMNS             16
 
@@ -37,6 +39,8 @@
 
 #define FREEZE_COMPLETED
 #define MANUAL_HISTORY
+#define ENABLE_DISCHARGE_POWER
+//#define DISCH_VOLT_ERR
 //#define ENABLE_AutoTime
 
 #define ENABLE_PROGRAM_MENUS_LIXX_CYCLING
@@ -50,5 +54,10 @@
 //#define ENABLE_DYNAMIC_MAX_POWER
 
 #define STRINGS_HEADER "strings/standard.h"
+
+#define CHEALI_CHARGER_ARCHITECTURE                     (CHEALI_CHARGER_ARCHITECTURE_CPU + CHEALI_CHARGER_ARCHITECTURE_GENERIC)
+#define CHEALI_CHARGER_ARCHITECTURE_INFO                (MAX_BANANCE_CELLS)
+
+#define DISCHARGE_OUTPUT_CAPACITOR_CURRENT				ANALOG_AMP(0.5)
 
 #endif /* GLOBAL_CONFIG_H_ */

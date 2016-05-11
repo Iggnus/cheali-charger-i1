@@ -22,6 +22,7 @@
 #include "memory.h"
 #include "Settings.h"
 //#include "Program.h"
+#include "Utils.h"
 
 namespace StartInfoStrategy {
     uint8_t ok_;
@@ -56,14 +57,13 @@ Strategy::statusType StartInfoStrategy::doStrategy()
     cell_nr = v_balance = false;
 //    v_out = ! AnalogInputs::isConnected(AnalogInputs::Vout);		//ign  I need to charge 0-voltage batt's
 
-//    if(ProgramData::battery.type == ProgramData::Unknown || ProgramData::battery.type == ProgramData::LED) {
+//    if(ProgramData::battery.type == ProgramData::UnknownBatteryType || ProgramData::battery.type == ProgramData::LED) {
 //        v_out = false;
 //    }
 
-    is_cells = AnalogInputs::getConnectedBalancePorts();		//ign199
+    is_cells = AnalogInputs::getConnectedBalancePortCellsCount();
 
     if(Strategy::doBalance) {
-//        is_cells = AnalogInputs::getConnectedBalancePorts();	//ign199
         should_be_cells = ProgramData::battery.cells;
         cell_nr = (should_be_cells != is_cells);
         v_balance = (is_cells == 0);

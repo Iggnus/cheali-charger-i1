@@ -92,6 +92,15 @@ void powerOn()
     if(settings.UART == Settings::Disabled)
         return;
 
+#ifdef ENABLE_EXT_TEMP_AND_UART_COMMON_OUTPUT
+    if(ProgramData::battery.enable_externT)
+#ifdef ENABLE_TX_HW_SERIAL
+        if(settings.UARToutput == Settings::Software)
+#endif
+            return;
+#endif
+
+
     serialBegin();
 
     state = Starting;
@@ -142,7 +151,6 @@ void doIdle()
             send();
         }
     }
-    //TODO: remove
     LogDebug_run();
 }
 
@@ -207,7 +215,15 @@ void sendHeader(uint16_t channel)
     printChar('$');
     printUInt(channel);
     printD();
-    printUInt(Program::programType+1);
+	
+//	printUInt(Program::programType+1);
+
+	if(Program::programType < 4) printUInt(Program::programType+1);
+	else {
+		if(!IO::digitalRead(SMPS_DISABLE_PIN)) printUInt(1);
+		if(!IO::digitalRead(DISCHARGE_DISABLE_PIN)) printUInt(4);
+	}
+	
     printD();
 
     printUInt(currentTime/1000);   //timestamp
@@ -258,6 +274,12 @@ void sendChannel1()
     printD();
     printUInt(Monitor::getETATime());
     printD();
+	
+//    printD();
+//    printUInt(AnalogInputs::getADCValue(AnalogInputs::Idischarge));
+//    printD();
+//    printUInt(Discharger::getValue());
+//    printD();
 
     sendEnd();
 }

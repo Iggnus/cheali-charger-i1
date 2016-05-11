@@ -23,8 +23,6 @@
 #include "Strategy.h"
 #include "Buzzer.h"
 
-//#include "SerialLog.h"    //ign
-
 namespace DelayStrategy {
      const Strategy::VTable vtable PROGMEM = {
         powerOn,
@@ -40,8 +38,6 @@ namespace DelayStrategy {
 
 void DelayStrategy::powerOn()
 {
-//SerialLog::printString("DelayStrategy::powerOn"); //SerialLog::printUInt(c); SerialLog::printD(); SerialLog::printUInt(blink.blinkTime_);  //ign
-//SerialLog::printNL();  //ign
     start_time_U16_ = Time::getSecondsU16();
 }
 
@@ -69,6 +65,5 @@ bool DelayStrategy::isDelay()
 void DelayStrategy::setDelay(uint16_t minutes)
 {
    delay_ = minutes*60;
-//   DelayStrategy::powerOn();
 }
 

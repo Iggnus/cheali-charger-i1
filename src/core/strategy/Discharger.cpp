@@ -23,6 +23,7 @@
 namespace Discharger {
     bool on_ = false;
     uint16_t value_;
+    uint16_t p_dis_limit;
     AnalogInputs::ValueType IoutSet_;
 
     bool isPowerOn()    { return on_; }
@@ -44,10 +45,14 @@ namespace Discharger {
         if (v == 0) {
             v = 1;
         }
+#ifdef ENABLE_DISCHARGE_POWER
+        AnalogInputs::ValueType i = AnalogInputs::evalI(p_dis_limit, v);
+#else
         AnalogInputs::ValueType i = AnalogInputs::evalI(MAX_DISCHARGE_P, v);
+#endif
 
-        if(i > MAX_DISCHARGE_I)
-            i = MAX_DISCHARGE_I;
+        if(i > settings.maxId)
+            i = settings.maxId;
         return i;
     }
 }
@@ -88,6 +93,9 @@ void Discharger::powerOn()
     IoutSet_ = 0;
     hardware::setDischargerOutput(true);
     on_ = true;
+#ifdef ENABLE_DISCHARGE_POWER
+	p_dis_limit = MAX_DISCHARGE_P;
+#endif
 }
 
 void Discharger::powerOff()

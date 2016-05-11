@@ -174,6 +174,11 @@ namespace Screen {
         lcdPrintTime(Monitor::getTimeSec());
         lcdSetCursor0_1();
         lcdPrint_P(Program::stopReason);
+#ifdef DISCH_VOLT_ERR
+//AnalogInputs::ValueType VMout_V = AnalogInputs::calibrateValue(AnalogInputs::Vout_plus_pin, Monitor::VMout);
+//lcdPrintVoltage(VMout_V, 5);
+if(Monitor::VMoutERR != 65535) lcdPrintVoltage(Monitor::VMoutERR, 5);
+#endif
         lcdPrintSpaces();
     }
 }

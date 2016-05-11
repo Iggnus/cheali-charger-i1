@@ -21,6 +21,7 @@
 #include "StaticMenu.h"
 #include "eeprom.h"
 #include "ProgramDataMenu.h"
+#include "memory.h"
 
 // Program selection depending on the battery type
 
@@ -128,7 +129,9 @@ namespace ProgramMenus {
         STATIC_ASSERT(ProgramData::LAST_BATTERY_CLASS == 6);
 
         ProgramData::BatteryClass bc = ProgramData::getBatteryClass();
-        if(ProgramData::battery.type == ProgramData::None)
+        if(ProgramData::battery.type == ProgramData::NoneBatteryType)
+//ProgramDataMenu::run();		//igntst  try to start edit if slot is empty
+//ProgramData::saveProgramData(MainMenuIndex);
             return &selectNoneMenu;
         if(bc == ProgramData::ClassNiZn)
             return &selectNiZnMenu;

@@ -41,7 +41,7 @@ namespace AnalogInputs {
 }
 
 namespace Monitor {
-    STRING(batteryDisconnected,         "battery disc.");
+    STRING(batteryDisconnected,         "batt.disc. ");
     STRING(internalTemperatureToHigh,   "int.temp.cutoff");
     STRING(balancePortDisconnected,     "balancer disc.");
     STRING(outputCurrentToHigh,         "HW failure");
@@ -97,7 +97,9 @@ namespace SettingsMenu {
     STRING(dischOff,    "disch off:");
     STRING(AudioBeep,   "beep:");
     STRING(minIc,       "min Ic:");
+    STRING(maxIc,       "max Ic:");
     STRING(minId,       "min Id:");
+    STRING(maxId,       "max Id:");
     STRING(inputLow,    "input low: ");
     STRING(adcNoise,    "adc noise:");
     STRING(UARTview,    "UART:");
@@ -209,8 +211,8 @@ namespace Calibrate {
     STRING(id_menu_current1,    CHEALI_CHARGER_STRING(CALIBRATION_DISCHARGE_POINT1_mA) "mA");
 
     //calibration common current menu
-    STRING(i_menu_value,    "value: ");
-    STRING(i_menu_output,   "Iout:  ");
+    STRING(i_menu_value,    "value:");
+    STRING(i_menu_output,   "I:");
 
 
     //calibration temperature select point menu

@@ -26,6 +26,9 @@ namespace Discharger {
 
     bool isPowerOn();
     bool isWorking();
+	
+    extern uint16_t p_dis_limit;
+
 
     //returns the truly set Iout
     AnalogInputs::ValueType getIout();

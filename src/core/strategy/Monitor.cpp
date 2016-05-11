@@ -30,6 +30,7 @@
 #include "LcdPrint.h"
 #include "Screen.h"
 #include "TheveninMethod.h"
+//#include <stdlib.h>
 
 #if defined(ENABLE_FAN) && defined(ENABLE_T_INTERNAL)
 #define MONITOR_T_INTERNAL_FAN
@@ -109,8 +110,8 @@ uint16_t Monitor::getTotalChargeDischargeTimeMin() {
 
 uint8_t Monitor::getChargeProcent() {
     uint16_t v1,v2, v;
-    v2 = ProgramData::getVoltage(ProgramData::VCharge);
-    v1 = ProgramData::getVoltage(ProgramData::ValidEmpty);
+    v2 = ProgramData::getVoltage(ProgramData::VCharged);
+    v1 = ProgramData::getVoltage(ProgramData::VvalidEmpty);
     v =  AnalogInputs::getRealValue(AnalogInputs::VoutBalancer);
 
     if(v >= v2) return 99;
@@ -158,7 +159,7 @@ void Monitor::powerOn()
 
     {
         //Make sure Vout_plus gets not higher VCharge + 3V (additional safety limit for protection ICs)
-        AnalogInputs::ValueType Vmax = ProgramData::getVoltage(ProgramData::VCharge);
+        AnalogInputs::ValueType Vmax = ProgramData::getVoltage(ProgramData::VCharged);
         Vmax += ANALOG_VOLT(3.000);
         if(Vmax > MAX_CHARGE_V) {
             Vmax = MAX_CHARGE_V;
@@ -179,6 +180,7 @@ void Monitor::powerOn()
     startTime_totalTime_U16_ = Time::getSecondsU16();
     resetAccumulatedMeasurements();
     on_ = true;
+    AnalogInputs::saveBalancePortState();
 }
 
 void Monitor::resetAccumulatedMeasurements()
@@ -221,18 +223,17 @@ Strategy::statusType Monitor::run()
         return Strategy::ERROR;
     }
 #endif
-
     AnalogInputs::ValueType VMout = AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin);
     if(Vout_plus_adcMaxLimit_ <= VMout || (VMout < Vout_plus_adcMinLimit_ && Discharger::isPowerOn())) {
-		if(ProgramData::isLiXX() && ProgramData::battery.cells == 2 && !AnalogInputs::isBalancePortConnected()) {		//igntst
-			Program::stopReason = string_batteryDisconnected;
-			return Strategy::COMPLETE;
+			if(ProgramData::isLiXX() && ProgramData::battery.cells == 2 && !AnalogInputs::isBalancePortConnected()) {		//ign
+				Program::stopReason = string_batteryDisconnected;
+				return Strategy::COMPLETE;
+			}
+			else {
+				Program::stopReason = string_batteryDisconnected;
+				return Strategy::ERROR;
+			}
 		}
-		else {
-			Program::stopReason = string_batteryDisconnected;
-			return Strategy::ERROR;
-		}
-    }
 
     if (isBalancePortConnected != AnalogInputs::isBalancePortConnected()) {
         Program::stopReason = string_balancePortDisconnected;

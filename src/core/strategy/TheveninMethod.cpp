@@ -166,6 +166,15 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
 //SerialLog::printString("TM "); SerialLog::printUInt(I); SerialLog::printD(); SerialLog::printUInt(newI_);  //ign
 //SerialLog::printNL();  //ign
 
+#ifdef CURRENT_PULS
+		static uint8_t R_timer;
+		if(++R_timer > 240) {		//ign - once per ~4 minute
+			R_timer = 0;
+			if(state_ == ConstantCurrentBalancing) {
+				newI_ = 0;
+			}	
+		}
+#endif
 
         if(newI_ < I) {
             //low pass filter
@@ -175,11 +184,10 @@ AnalogInputs::ValueType TheveninMethod::calculateNewI(bool isEndVout, AnalogInpu
             newI_ = (newI_ + I)/2;
         }
 
-//SerialLog::printUInt(newI_); SerialLog::printD();  //ign
-
         newI_ = normalizeI(newI_, I);
 
-//SerialLog::printUInt(newI_); SerialLog::printNL();  //ign
+//SerialLog::printString("TM newI_ "); SerialLog::printUInt(I);  //ign
+//SerialLog::printNL();  //ign
 
         switch(state_) {
         case ConstantCurrentBalancing:
@@ -255,13 +263,17 @@ AnalogInputs::ValueType TheveninMethod::normalizeI(AnalogInputs::ValueType newI,
         // - if we are in ConstantVoltageBalancing AND new current is not larger then the minimum, or
         // - if we are in ConstantVoltageBalancing AND we did balancing (current went below minimum)
         if(state_ != ConstantVoltageBalancing
-            || newI < I
-            || newI <= getMinIwithBalancer()
-            || (I <= Strategy::minI && lastBallancingEnded_ != Balancer::balancingEnded)) {
-
+        || newI < I
+        || newI <= getMinIwithBalancer()
+        || (I <= Strategy::minI && lastBallancingEnded_ != Balancer::balancingEnded)) {
+//igntst if( state_ == ConstantVoltageBalancing && newI < I ) - lets pause increasing current
             lastBallancingEnded_ = Balancer::balancingEnded;
             return newI;
         }
+		else if( ProgramData::battery.type == ProgramData::Pb ) {		//igntst  ProgramData::isPb()
+//		else if( ProgramData::isPb() ) {		//igntst  ProgramData::isPb()
+			if( newI > I+1 ) return I + 1;
+		}
     }
     return I;
 }

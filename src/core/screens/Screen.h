@@ -48,6 +48,7 @@ namespace Screen {
     extern uint8_t OnTheFly_;   //ign
     extern int8_t OnTheFly_dir;   //ign
     extern bool OnTheFly_blink;   //ign
+    extern bool screen_animation;   //ign
 
     void displayCalibrationErrorScreen(uint8_t errNo);
 
@@ -76,3 +77,4 @@ namespace Screen {
 };
 
 #endif /* SCREEN_H_ */
+

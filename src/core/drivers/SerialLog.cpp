@@ -209,7 +209,9 @@ void printLong(int32_t x)
 
 void sendHeader(uint16_t channel)
 {
-//return; //ign
+#ifdef IGN_DEBUG
+	return; //igntst
+#endif
 
     CRC = 0;
     printChar('$');
@@ -248,7 +250,9 @@ void sendEnd()
 
 void sendChannel1()
 {
-//return; //ign
+#ifdef IGN_DEBUG
+	return; //igntst
+#endif
 
     sendHeader(1);
     //analog inputs

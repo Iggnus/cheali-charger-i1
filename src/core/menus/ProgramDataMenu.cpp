@@ -98,13 +98,13 @@ const StaticEditMenu::StaticEditData editData[] PROGMEM = {
 {string_Vs_per_cell,    COND_LiXX,          {CP_TYPE_V,0,&battery.Vs_per_cell},             {1,ANALOG_VOLT(0.0),ANALOG_VOLT(5.0)}},
 {string_Vd_per_cell,    COND_BATTERY,		{CP_TYPE_V,0,&battery.Vd_per_cell},    {1,ANALOG_VOLT(0.0),ANALOG_VOLT(5.0)}},
 {string_Vd_per_cell,    COND_Unknown,       {CP_TYPE_V,0,&battery.Vd_per_cell},             {50,ANALOG_VOLT(0.0),MAX_CHARGE_V}},
-{string_minIc,          COND_LiXX_NiZn_Pb_Unkn,{CP_TYPE_A,0,&battery.minIc},           {CE_STEP_TYPE_SMART, ANALOG_AMP(0.001), MAX_CHARGE_I}},
+{string_minIc,          COND_BATTERY,		{CP_TYPE_A,0,&battery.minIc},					{CE_STEP_TYPE_SMART, ANALOG_AMP(0.001), MAX_CHARGE_I}},
 {string_minId,          COND_BATTERY,       {CP_TYPE_A,0,&battery.minId},                   {CE_STEP_TYPE_SMART, ANALOG_VOLT(0.001), MAX_DISCHARGE_I}},
 {string_balancErr,      COND_LiXX_NiZn,     {CP_TYPE_SIGNED_mV,0,&battery.balancerError},   {ANALOG_VOLT(0.001), ANALOG_VOLT(0.003), ANALOG_VOLT(0.200)}},
 
 {string_enabledV,       COND_NiXX,          {CP_TYPE_ON_OFF,0,&battery.enable_deltaV},      {1, 0, 1}},
 {string_deltaV,         COND_enable_dV,     {CP_TYPE_SIGNED_mV,0,&battery.deltaV},          {ANALOG_VOLT(0.001), -ANALOG_VOLT(0.020), ANALOG_VOLT(0.000)}},
-{string_ignoreFirst,    COND_enable_dV,     {CP_TYPE_MINUTES,0,&battery.deltaVIgnoreTime},  {1, 1, 10}},
+{string_ignoreFirst,    COND_enable_dV,     {CP_TYPE_MINUTES,0,&battery.deltaVIgnoreTime},  {1, 1, 15}},
 
 {string_externT,        COND_BATTERY,       {CP_TYPE_ON_OFF,0,&battery.enable_externT},     {1, 0, 1}},
 {string_dTdt,           COND_enable_dT,     {CP_TYPE_TEMP_MINUT,6,&battery.deltaT},         {ANALOG_CELCIUS(0.1), ANALOG_CELCIUS(0.1), ANALOG_CELCIUS(9)}},

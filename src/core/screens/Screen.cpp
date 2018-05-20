@@ -43,6 +43,7 @@ uint8_t OnTheFly_;
 int8_t OnTheFly_dir;
 bool OnTheFly_blink;
 bool OnTheFly_blink2;
+bool screen_animation;
 
     uint8_t pageNr_;
     uint8_t keyboardButton;
@@ -213,6 +214,7 @@ void Screen::displayScreenReversedPolarity()
 
 void Screen::displayAnimation()
 {
+	screen_animation = true;
     for (uint8_t i=0; i<16; i++) {
         lcdSetCursor(15-i,1);
         lcdPrintChar(255);
@@ -220,6 +222,8 @@ void Screen::displayAnimation()
         lcdPrintChar(255);
         Time::delayDoIdle(10);
     }
+	Time::delayDoIdle(100);		//igntst
+	screen_animation = false;
 }
 
 void Screen::displayCalibrationErrorScreen(uint8_t errNo)

@@ -20,6 +20,7 @@
 
 #include "GlobalConfig.h"
 #include "HardwareConfigGeneric.h"
+#include "imaxB6-pins.h"
 
 #define MAX_CHARGE_V            ANALOG_VOLT(27.000)
 #define MAX_CHARGE_I            ANALOG_AMP(5.000)
@@ -28,9 +29,10 @@
 #define MAX_DISCHARGE_P         ANALOG_WATT(5.000)
 #define MAX_DISCHARGE_I         ANALOG_AMP(1.000)
 
+#define SETTINGS_MAX_DISCHARGE_I        ANALOG_AMP(0.300)
 
-//1-13? correlation
-#define SMPS_UPPERBOUND_VALUE               (MAX_CHARGE_I*13)
+
+#define SMPS_UPPERBOUND_VALUE               65000
 #define DISCHARGER_UPPERBOUND_VALUE         TIMER1_PRECISION_PERIOD
 
 #endif /* HARDWARE_CONFIG_H_ */

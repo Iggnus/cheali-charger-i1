@@ -39,7 +39,7 @@
 
 
 namespace Monitor {
-
+    volatile uint8_t i_externalError;
     uint16_t etaDeltaSec;
     uint16_t etaStartTimeCalc;
 
@@ -179,6 +179,7 @@ void Monitor::powerOn()
 //	c_limit  = 15;
     startTime_totalTime_U16_ = Time::getSecondsU16();
     resetAccumulatedMeasurements();
+    i_externalError = MONITOR_EXTERNAL_ERROR_NONE;
     on_ = true;
     AnalogInputs::saveBalancePortState();
 }
@@ -224,7 +225,9 @@ Strategy::statusType Monitor::run()
     }
 #endif
     AnalogInputs::ValueType VMout = AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin);
-    if(Vout_plus_adcMaxLimit_ <= VMout || (VMout < Vout_plus_adcMinLimit_ && Discharger::isPowerOn())) {
+	uint8_t externalError = i_externalError;
+    if(externalError == MONITOR_EXTERNAL_ERROR_BATTERY_DISCONNECTED
+    || Vout_plus_adcMaxLimit_ <= VMout || (VMout < Vout_plus_adcMinLimit_ && Discharger::isPowerOn())) {
 			if(ProgramData::isLiXX() && ProgramData::battery.cells == 2 && !AnalogInputs::isBalancePortConnected()) {		//ign
 				Program::stopReason = string_batteryDisconnected;
 				return Strategy::COMPLETE;

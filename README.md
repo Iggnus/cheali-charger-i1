@@ -2,15 +2,9 @@ Welcome to cheali-charger!
 ==========================
 
 Based at Pawel's firmware - [Branch:master at 16.01.2016](https://github.com/stawel/cheali-charger/tree/667b235d5663109c599a1da354d420ba6162a6a3)
-With some fixes from later versions:
-bugfix, atmega32, ADC: occasionally ADC reads wrong channel
-bugfix: determine cell count only at the beginning of charge
-avr: move speaker code to Timer0
-partly - fix: add Keyboard debounce for all states
-set Program::dischargeOutputCapacitor discharge current to max 1A (0.5)
-bugfix: disable T internal during calibration
+With some fixes from later versions (till Dec,2016)
 
-Compatible with EEPROM v1.99 10.3.12
+Compatible with EEPROM v1.99/v2.00 10.3.12
 ___
 
 for testing
@@ -27,14 +21,20 @@ for testing
 + Adjustable voltage (before process)
 + On-the-fly adjustable capacity limit (limits screen)
 + On-the-fly adjustable time limit
++ On-the-fly adjustable discharge power limit
 + Batteries can be charged from 0 voltage
 + Long press Stop key for stop - prevents accidental stop with loosing data
-* changed routine for energy calculation
++ 1/4 of current for deeply discharged batteries
++ self-recovering current for CV-mode for old PB
++ 160% capacity cutoff for NiXX and 120% for other types (defaults)
+* current pulses for more precise resistance calculation (uncomment //#define CURRENT_PULS in GlobalConfig.h)
+* smooter soft start routines for atmega "50W charger"s architecture
+* different routine for energy calculation
 
 
 Now it is possible to change main parameters while charging discharging and cycling.
 New voltage/current will be actual till the battery type change. It does not stores to EEPROM.
-New capacity limit will be used only once. For example it can be used for skipping of first discharge in cycling mode
+New capacity or power limit will be used only once. For example: capacity limit can be used for skipping of first discharge in cycling mode
 
 this fork discussion - https://groups.google.com/forum/#!topic/cheali-charger/EuhUAoyecso
 
@@ -44,7 +44,7 @@ ___
 last changes
 
 
-11.05.2016
+20.05.2018
 ...
 
 

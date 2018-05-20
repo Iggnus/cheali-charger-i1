@@ -23,6 +23,8 @@
 //#define ENABLE_DEBUG
 #include "debug.h"
 
+#include "Screen.h"
+
 //delay until next key read, must not be smaller than 7ms (see: atmeag32/generic/200W/AnalogInputsADC.cpp:adc_keyboard_)
 #define BUTTON_DELAY                 7
 #define BUTTON_DEBOUNCE_COUNT        3
@@ -46,6 +48,7 @@ namespace Keyboard {
     //state_ == 0 - new key pressed (or we are in key == BUTTON_NONE)
     //state_ == n - key is pressed and hold
     uint8_t state_ = 0;
+	bool screen_animation;
 
     bool isLongPressTime() {
         return state_ > 2;
@@ -69,6 +72,7 @@ uint8_t Keyboard::getPressedWithDelay()
 {
     uint8_t key, delay = 0, currentStateDelay;
 
+//if(!Screen::screen_animation){
     pgm::read(currentStateDelay, &stateDelay[state_]);
 
     do {
@@ -105,5 +109,6 @@ uint8_t Keyboard::getPressedWithDelay()
     }
 
     return key;
+//}
 }
 

@@ -1,12 +1,16 @@
 #include "Hardware.h"
-#include "imaxB6-pins.h"
 #include "SMPS_PID.h"
 #include "IO.h"
 #include "AnalogInputs.h"
 #include "atomic.h"
+#include "Monitor.h"
+#include "Utils.h"
 
 //#define ENABLE_DEBUG
 #include "debug.h"
+
+
+STATIC_ASSERT(MAX_PID_MV_FACTOR < 1.61);
 
 namespace {
     volatile uint16_t i_PID_setpoint;
@@ -39,6 +43,7 @@ void SMPS_PID::update()
         i_PID_enable = false;
         runDebug(adcDebugStop = true);
         LogDebug(AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin), ">=", i_PID_CutOffVoltage);
+        Monitor::i_externalError = MONITOR_EXTERNAL_ERROR_BATTERY_DISCONNECTED;
         return;
     }
 
@@ -47,6 +52,12 @@ void SMPS_PID::update()
     uint16_t PV = AnalogInputs::getADCValue(AnalogInputs::Ismps);
     long error = i_PID_setpoint;
     error -= PV;
+
+#ifdef a50W_SOFT_START
+	if(error > 500) error = 500;		//ign 50W_SOFT_START
+	//else if(error < -1000) error = -1000;
+#endif
+	
     i_PID_MV += error*A;
 
     if(i_PID_MV<0) i_PID_MV = 0;

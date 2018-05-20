@@ -18,20 +18,26 @@
 #include "Hardware.h"
 #include "Timer1.h"
 #include "Timer0.h"
-#include "imaxB6-pins.h"
 #include "SMPS_PID.h"
 #include "AnalogInputsADC.h"
 #include "SerialLog.h"
 #include "IO.h"
 #include "Keyboard.h"
 
+#include "Screen.h"
+
+#ifndef PINS_H_
+#error pins not defined (include *pins.h header in your HardwareConfig.h)
+#endif
 
 uint8_t hardware::getKeyPressed()
 {
+if(!Screen::screen_animation){
     return   (IO::digitalRead(BUTTON_STOP_PIN) ? 0 : BUTTON_STOP)
             | (IO::digitalRead(BUTTON_DEC_PIN)  ? 0 : BUTTON_DEC)
             | (IO::digitalRead(BUTTON_INC_PIN)  ? 0 : BUTTON_INC)
             | (IO::digitalRead(BUTTON_START_PIN)? 0 : BUTTON_START);
+}
 }
 
 

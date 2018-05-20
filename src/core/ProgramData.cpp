@@ -296,21 +296,22 @@ void ProgramData::changedType()
         battery.externTCO = ANALOG_CELCIUS(60);
 
         battery.enable_adaptiveDischarge = false;
-        battery.DCRestTime = 30;
-        battery.capCutoff = 120;
+        battery.DCRestTime = 20;
     }
 
     if(isNiXX()) {
         battery.enable_deltaV = true;
+        battery.capCutoff = 160;
         if(battery.type == NiMH) {
             battery.deltaV = -ANALOG_VOLT(0.005);
         } else {
             battery.deltaV = -ANALOG_VOLT(0.015);
         }
-        battery.deltaVIgnoreTime = 3;
+        battery.deltaVIgnoreTime = 6;
         battery.deltaT = ANALOG_CELCIUS(1);
-        battery.DCcycles = 2;
+        battery.DCcycles = 1;
     } else {
+        battery.capCutoff = 120;
         battery.balancerError = ANALOG_VOLT(0.008);
         battery.Vs_per_cell = getDefaultVoltagePerCell(VStorage);
     }

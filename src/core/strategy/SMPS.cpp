@@ -93,6 +93,7 @@ void SMPS::trySetIout(AnalogInputs::ValueType I)
     AnalogInputs::ValueType maxI = getMaxIout();
     if(maxI < I) I = maxI;
 
+#if !defined(a50W_SOFT_START) || CHEALI_CHARGER_ARCHITECTURE_GENERIC == 2	//ign - if charger is 150W+ OR "a50W_SOFT_START" is not defined
     if(I < IoutSet_) {
         if(SMPS_MAX_CURRENT_CHANGE_dM < IoutSet_ - I)
             I = IoutSet_ - SMPS_MAX_CURRENT_CHANGE_dM;
@@ -100,6 +101,7 @@ void SMPS::trySetIout(AnalogInputs::ValueType I)
         if(SMPS_MAX_CURRENT_CHANGE_dM < I - IoutSet_)
             I = IoutSet_ + SMPS_MAX_CURRENT_CHANGE_dM;
     }
+#endif
 
     if(IoutSet_ == I) return;
     IoutSet_ = I;

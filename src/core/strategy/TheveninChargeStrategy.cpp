@@ -57,7 +57,14 @@ Strategy::statusType TheveninChargeStrategy::doStrategy()
         return Strategy::COMPLETE;
     }
     AnalogInputs::ValueType newI = TheveninMethod::calculateNewI(isendVout, I);
-    SMPS::trySetIout(newI);
+
+#ifdef UNDERVOLTAGE_LOW_CURRENT
+    if(AnalogInputs::getVbattery() < ProgramData::getVoltage(ProgramData::VDischarged)) {
+        newI/=4;
+    }
+#endif
+	
+	SMPS::trySetIout(newI);
 
     return Strategy::RUNNING;
 }

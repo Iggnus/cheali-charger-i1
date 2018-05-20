@@ -48,9 +48,10 @@ Strategy::statusType DeltaChargeStrategy::doStrategy()
     SimpleChargeStrategy::calculateThevenin();
     AnalogInputs::ValueType Vout = AnalogInputs::getVbattery();
 
-    if(ProgramData::getVoltage(ProgramData::VDischarged) < Vout) {
+    if(Vout > ProgramData::getVoltage(ProgramData::VDischarged)) {
         SMPS::trySetIout(Strategy::maxI);
     }
+	else SMPS::trySetIout(Strategy::maxI / 4);		//ign lower current for deep NiXX
 
     if(Vout > Strategy::endV) {
         Program::stopReason = string_batteryVoltageReachedUpperLimit;

@@ -37,9 +37,14 @@
 #define ENABLE_CALIBRATION_CHECK
 
 
+//#define IGN_DEBUG
+
 #define FREEZE_COMPLETED
 #define MANUAL_HISTORY
 #define ENABLE_DISCHARGE_POWER
+//#define CURRENT_PULS
+#define UNDERVOLTAGE_LOW_CURRENT
+#define a50W_SOFT_START
 //#define DISCH_VOLT_ERR
 //#define ENABLE_AutoTime
 
